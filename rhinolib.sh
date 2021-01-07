@@ -1,4 +1,4 @@
-# rhinolib bash script function library v1.5.3
+# rhinolib bash script function library v1.5.4
 # 2021-01-08 by Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # License: GPLv3.
 

@@ -5,7 +5,7 @@ set -o errtrace     # Capture errors in functions, command substitutions and sub
 set -o errexit      # Exit when a command fails
 set -o pipefail     # Capture and crash when pipes failed anywhere in the pipe
 
-declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.7, 2021-01-07, by YOUR NAME, YOUR EMAIL"
+declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.8, 2021-01-08, by YOUR NAME, YOUR EMAIL"
 declare -r ProcID="$(echo $$)"
     # ^ Script process ID for logging purposes
 declare -r ScriptName="ScriptName"
