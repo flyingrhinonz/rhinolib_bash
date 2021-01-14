@@ -1,4 +1,4 @@
-# rhinolib bash script function library v1.5.4
+# rhinolib bash script function library v1.5.5
 # 2021-01-08 by Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # License: GPLv3.
 
@@ -8,6 +8,8 @@
 # Calling script must have these vars configured:
 # ProcID, ScriptName, ScriptMaxLogLevel, SyslogProgName
 # See example script_template.sh for examples.
+# In order to use function LogNftRules - you must define the NftCommand
+# variable in your calling script as the path to nftables 'nft' command.
 #
 # Using this library will give you summary failure logs in
 # /tmp/rhinolib_script_errors . Use it as a reference if required.
@@ -432,7 +434,7 @@ function LogNftRules {
     # ^ Supply some identifying text within the "..." so that you can find it in the logs
 
     LogWrite info "NFT OUTPUT LOGGING STARTS BELOW FOR: ${1}"
-    local NftRules="$(sudo ${Nft} list ruleset -nn --handle 2>&1)"
+    local NftRules="$(sudo ${NftCommand} list ruleset -nn --handle 2>&1)"
         # ^ May need to check if the script's user can sudo, else I need
         #   to log it with an error and return 1
     LogWrite info "${NftRules}"
