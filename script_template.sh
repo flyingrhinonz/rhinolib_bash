@@ -5,9 +5,11 @@ set -o errtrace     # Capture errors in functions, command substitutions and sub
 set -o errexit      # Exit when a command fails
 set -o pipefail     # Capture and crash when pipes failed anywhere in the pipe
 
-declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.8, 2021-01-08, by YOUR NAME, YOUR EMAIL"
+declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.9 , 2021-04-09 , by YOUR NAME ( YOUR EMAIL )"
 declare -r ProcID="$(echo $$)"
     # ^ Script process ID for logging purposes
+    #   Note - in systemd / journalctl the PID of logger is displayed and not this!
+    #   Therefore I log it separately in rhinolib.
 declare -r ScriptName="ScriptName"
     # ^ Script name for logging purposes
 declare -r CurrentUser="$(id -un)"
@@ -21,9 +23,11 @@ declare -r ScriptMaxLogLevel="debug"
 declare -r SyslogProgName="ProgramName"
     # ^ This is 'ProgramName' in syslog line (just before the PID value)
     #   Different from ScriptName because ProgramName allows syslog to filter
-    #   and log lines with this value in different files.
+    #     and log lines with this value in different files.
     #   So you can configure syslog to log all your programs to your
-    #   own log file by using your own ProgramName here.
+    #     own log file by using your own ProgramName here.
+    #   In journalctl use this for tailing based on ProgramName:
+    #     journalctl -fa -o short-iso -t ProgramName
 declare -r OriginalIFS="${IFS}"
     # ^ In case we need to change it along the way
 
@@ -33,12 +37,14 @@ declare -r OriginalIFS="${IFS}"
     }
 
 # Setup error traps that send debug information to rhinolib for logging:
-trap 'ErrorTrap "$LINENO" "$?" "$BASH_COMMAND" "$_" "${BASH_SOURCE[*]}" "${FUNCNAME[*]}" "${BASH_LINENO[*]}"' ERR
+trap 'ErrorTrap "$LINENO" "$?" "$BASH_COMMAND" "$_" "${BASH_SOURCE[*]}" "${FUNCNAME[*]:-FUNCNAME_is_unset}" "${BASH_LINENO[*]}"' ERR
+    # ^ In RH I found that this trap gives an error: FUNCNAME[*]: unbound variable
+    #     so I'm mitigating that by checking for unset and supplying text 'FUNCNAME_is_unset'
 trap 'ExitScript' EXIT
 
 SymLinkResolved="(Symlink resolved: $( readlink --quiet --no-newline $0 )) " || SymLinkResolved=""
 LogWrite info "${ScriptVersion}"
-LogWrite debug "Invoked commandline: $0 $* ${SymLinkResolved}, from directory: ${PWD:-unknown} , by user: $UID: ${CurrentUser:-unknown} , PPID: ${PPID:-unknown} , Script max log level ${ScriptMaxLogLevel}"
+LogWrite debug "Invoked commandline: $0 $* ${SymLinkResolved}, from directory: ${PWD:-unknown} , by user: $UID: ${CurrentUser:-unknown} , ProcID: ${ProcID} , PPID: ${PPID:-unknown} , Script max log level: ${ScriptMaxLogLevel}"
 
 # Script body begins here. Put your code below this:
 

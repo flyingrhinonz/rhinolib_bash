@@ -1,5 +1,5 @@
-# rhinolib bash script function library v1.5.5
-# 2021-01-08 by Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
+# rhinolib bash script function library v1.6.0
+# 2021-04-09 by Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # License: GPLv3.
 
 # Prerequisites:
@@ -16,7 +16,9 @@
 # I also use the presence of this file for detecting errors.
 
 
-declare -r FailureTrapFile="/tmp/rhinolib_script_errors"
+declare -r FailureTrapFile="/tmp/rhinolib_script_errors_${CurrentUser}"
+    # ^ Now it's per user name in case of write permissions
+    #   Note - this file does not survive reboots due to living in /tmp/
 declare -r IndentString="    ...."
     # ^ In my python3 code I actually calculate the resulting string, but here it's
     #   good enough using a hardcoded string.
@@ -228,9 +230,21 @@ function LogWrite {
         #    "${LogLevelText}" "[${ScriptName::10}]" \
         #    "[${ProcID}]" "${FUNCNAME[1]:-"UNKNOWN"}" "${LineLooper}")
 
-        LoggerText="<${LogLevelText}> ($(date +%Y-%m-%d\ %H:%M:%S.%3N) , MN: ${ScriptName} , FN: ${FUNCNAME[1]:-UNKNOWN} , LI: ${BASH_LINENO}):    ${LineLooper}"
+        # This is for syslog:
+        #LoggerText="<${LogLevelText}> ($(date +%Y-%m-%d\ %H:%M:%S.%3N) , MN: ${ScriptName} , FN: ${FUNCNAME[1]:-UNKNOWN} , LI: ${BASH_LINENO}):    ${LineLooper}"
+        #logger --id "${ProcID}" --tag "${SyslogProgName}" "${LoggerText}"
 
-        logger --id="${ProcID}" --tag "${SyslogProgName}" "${LoggerText}"
+        # This is for systemd / journalctl:
+        LoggerText="<${LogLevelText}> (PID: ${ProcID} , MN: ${ScriptName} , FN: ${FUNCNAME[1]:-UNKNOWN} , LI: ${BASH_LINENO}):    ${LineLooper}"
+        # ^ Note - in journalctl the PID of logger is displayed inside the [...] and not the PID of the script.
+        #   Therefore I am adding the PID manually.
+        #   Also journalctl can show proper dates, so I removed the date field. Use this:
+        #     journalctl -fa -o short-iso -t ProgramName
+        logger --tag "${SyslogProgName}" "${LoggerText}"
+
+        # ^ todo - detect whether syslog or journalctl is in use and choose the line above automatically.
+        #   Don't need the --id for systemd as it's already added into journalctl
+
         done
 }
 
@@ -247,7 +261,7 @@ function ExitScript {
     shift || :
     local -i ExitCode="${1:-"150"}"
     shift || :
-    local ExitReason="${*:-"Error - exit reason was not supplied"}"
+    local ExitReason="${*:-"Error (a more specific exit reason was not supplied)"}"
 
     (( $ExitCode !=0 )) && \
         {
@@ -260,12 +274,13 @@ function ExitScript {
         # ^ Stop the exit error trap because we really want to exit here!
     LogWrite "${LogLevel}" "Script end, runtime $SECONDS seconds. Exit code: ${ExitCode} . Exit reason: ${ExitReason}"
     exit "$ExitCode"
-    # ^ The script should not continue any further
-    LogWrite error "Exit command issued above this line. Script should have already exited"
 }
 
 
 function ErrorTrap {
+    # Traps errors, writes debugging information and kills self.
+    # Note - function ExitScript will not be called!
+
     LogWrite debug "Function ErrorTrap started"
     WriteErrorFile "Function ErrorTrap called"
     trap '' EXIT
@@ -274,7 +289,6 @@ function ErrorTrap {
     LogWrite critical "ErrorTrap in RhinoLib PID $$ is going to kill PID ${ProcID} now!"
     kill -9 ${ProcID} &>/dev/null
         # ^ Should not proceed any further
-    ExitScript CRITICAL 150 "Killed by ErrorTrap"
 }
 
 
