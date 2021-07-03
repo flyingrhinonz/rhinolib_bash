@@ -1,5 +1,5 @@
-# rhinolib bash script function library v1.6.0
-# 2021-04-09 by Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
+# rhinolib bash script function library v1.6.1
+# 2021-07-03 by Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # License: GPLv3.
 
 # Prerequisites:
@@ -225,25 +225,31 @@ function LogWrite {
         do
 
         # Used to be this code that did columized formatting, but now I'm
-        # keeping in in line with my python3 logging:
+        # keeping it in line with my python3 logging:
         #LoggerText=$(printf "%-8s %-12s %-8s (%s) %s\n" \
         #    "${LogLevelText}" "[${ScriptName::10}]" \
         #    "[${ProcID}]" "${FUNCNAME[1]:-"UNKNOWN"}" "${LineLooper}")
 
-        # This is for syslog:
+        # This code is for syslog:
         #LoggerText="<${LogLevelText}> ($(date +%Y-%m-%d\ %H:%M:%S.%3N) , MN: ${ScriptName} , FN: ${FUNCNAME[1]:-UNKNOWN} , LI: ${BASH_LINENO}):    ${LineLooper}"
         #logger --id "${ProcID}" --tag "${SyslogProgName}" "${LoggerText}"
 
-        # This is for systemd / journalctl:
+        # This code is for systemd / journalctl (but also logs to syslog properly):
         LoggerText="<${LogLevelText}> (PID: ${ProcID} , MN: ${ScriptName} , FN: ${FUNCNAME[1]:-UNKNOWN} , LI: ${BASH_LINENO}):    ${LineLooper}"
-        # ^ Note - in journalctl the PID of logger is displayed inside the [...] and not the PID of the script.
-        #   Therefore I am adding the PID manually.
-        #   Also journalctl can show proper dates, so I removed the date field. Use this:
+        # ^ Note - in journalctl the PID of the logger program is displayed inside the:     ProgramName[6923]:      rather than the PID of the script.
+        #   Therefore I am adding the PID manually as a field inside the (...) section.
+        #   For example:    Jul 03 13:17:09 asus303 ProgramName[7155]: <DEBUG> (PID: 7143 , MN: ScriptName
+        #                   ^ Timestamp
+        #                                           ^ Your script name
+        #                                                       ^ PID of logger command
+        #                                                                            ^ PID of the script itself (this is the one you want)
+        #
+        #   Also journalctl can show proper dates, so I removed the date field. Use this to read the journal:
         #     journalctl -fa -o short-iso -t ProgramName
-        logger --tag "${SyslogProgName}" "${LoggerText}"
 
-        # ^ todo - detect whether syslog or journalctl is in use and choose the line above automatically.
-        #   Don't need the --id for systemd as it's already added into journalctl
+        logger --tag "${SyslogProgName}" "${LoggerText}"
+        # ^ Don't need the --id for systemd as it's already added into journalctl incorrectly (it logs the PID of 'logger')
+        #   and I send it manually inside the (...). See note above.
 
         done
 }
