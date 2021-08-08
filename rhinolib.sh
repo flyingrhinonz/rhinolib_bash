@@ -1,6 +1,10 @@
-# rhinolib bash script function library v1.6.1
-# 2021-07-03 by Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
-# License: GPLv3.
+# Name:         rhinolib
+# Description:  bash script function library
+# Version:      1.6.2
+# Date:         2021-08-08
+# By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
+# Github:       https://github.com/flyingrhinonz/rhinolib_bash
+# License:      GPLv3.
 
 # Prerequisites:
 #
@@ -247,7 +251,7 @@ function LogWrite {
         #   Also journalctl can show proper dates, so I removed the date field. Use this to read the journal:
         #     journalctl -fa -o short-iso -t ProgramName
 
-        logger --tag "${SyslogProgName}" "${LoggerText}"
+        logger -t "${SyslogProgName}" "${LoggerText}"
         # ^ Don't need the --id for systemd as it's already added into journalctl incorrectly (it logs the PID of 'logger')
         #   and I send it manually inside the (...). See note above.
 
