@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# This script originates from the master script file that comes with rhinolib.
+# Edit and reuse this script to take advantage of rhinolib functions.
+# For details refer to github:  https://github.com/flyingrhinonz/rhinolib_bash .
+
 set -o nounset      # Crash when an unset variable is used
 set -o errtrace     # Capture errors in functions, command substitutions and subshells
 set -o errexit      # Exit when a command fails

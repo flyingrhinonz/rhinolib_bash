@@ -8,21 +8,21 @@
 
 # Prerequisites:
 #
-# Place this rhinolib.sh file under /usr/local/lib/
+# Place this:  rhinolib.sh  file under:  /usr/local/lib/ .
 # Calling script must have these vars configured:
-# ProcID, ScriptName, ScriptMaxLogLevel, SyslogProgName
-# See example script_template.sh for examples.
-# In order to use function LogNftRules - you must define the NftCommand
-# variable in your calling script as the path to nftables 'nft' command.
+#   ProcID, ScriptName, ScriptMaxLogLevel, SyslogProgName
+# See example:  script_template.sh  for examples.
+# In order to use function:  LogNftRules  - you must define the:  NftCommand
+#   variable in your calling script as the path to nftables:  'nft'  command.
 #
 # Using this library will give you summary failure logs in
-# /tmp/rhinolib_script_errors . Use it as a reference if required.
-# I also use the presence of this file for detecting errors.
+#   /tmp/rhinolib_script_errors . Use it as a reference if required.
+#   I also use the presence of this file for detecting errors.
 
 
 declare -r FailureTrapFile="/tmp/rhinolib_script_errors_${CurrentUser}"
     # ^ Now it's per user name in case of write permissions
-    #   Note - this file does not survive reboots due to living in /tmp/
+    #   Note - this file does not survive reboots due to living in:  /tmp/
 declare -r IndentString="    ...."
     # ^ In my python3 code I actually calculate the resulting string, but here it's
     #   good enough using a hardcoded string.

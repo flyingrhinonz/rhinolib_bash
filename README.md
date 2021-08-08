@@ -18,7 +18,7 @@ See the GNU General Public License for more details.
 
 # Manual install instructions
 
-Copy: **rhinolib.sh**   to: **/usr/local/lib/**
+Copy: **rhinolib.sh**   to: **/usr/local/lib/** .
 Use the file:  **script_template.sh**   as an example how to create your own scripts.
 
 
@@ -26,11 +26,11 @@ Use the file:  **script_template.sh**   as an example how to create your own scr
 
 The star of the show here is:   **LogWrite**  function that provides proper logging from your script:
 - Logging using standard syslog calls.
-- You can log to regular:  **/var/log/syslog**  file or any other file by configuring syslog to act upon the value of variable **SyslogProgName** .
-- In systemd it will log properly to the journal. View using **journalctl** .
+- You can log to regular:  **/var/log/syslog**  file, or any other file by configuring syslog to act upon the value of variable:   **SyslogProgName** .
+- In systemd it will log properly to the journal. View using:  **journalctl** .
 - Splits long lines and marks them as such.
 - Indents subsequent lines in an attempt to make the log file more readable.
-- Logging at different log levels so you can easily switch from development to production by simply reducing the log level.
+- Logging at different log levels so you can easily switch from development to production by simply reducing the log level in your calling script.
 
 Captures crashes in your script and logs debugging information - making troubleshooting your scripts much easier.
 
