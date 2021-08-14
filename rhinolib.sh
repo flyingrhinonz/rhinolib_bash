@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.2
-# Date:         2021-08-08
+# Version:      1.6.3
+# Date:         2021-08-09
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3.
@@ -47,8 +47,21 @@ declare -r ExpandBSN="yes"
 #These tests verify that the calling script supplied these vars:
 [ "$ProcID" ]               # Should fail due to shopt -s -o nounset
 [ "$ScriptName" ]           # Same.
-[ "$ScriptMaxLogLevel" ]    # Same.
 [ "$SyslogProgName" ]       # Same.
+[ "$ScriptMaxLogLevel" ]    # Same.
+
+# The following test will check for ScriptMaxLogLevel validity or crash your script:
+#[[  ${ScriptMaxLogLevel^^} == "NONE" || \
+#    ${ScriptMaxLogLevel^^} == "CRITICAL" || \
+#    ${ScriptMaxLogLevel^^} == "ERROR" || \
+#    ${ScriptMaxLogLevel^^} == "WARNING" || \
+#    ${ScriptMaxLogLevel^^} == "INFO" || \
+#    ${ScriptMaxLogLevel^^} == "DEBUG" ]] || ScriptMaxLogLevel="ScriptWillCrashNow"
+#        # ^ This tests that your script is configured with one of the supported
+#        #       log levels otherwise it will fail due to setting a readonly variable.
+    # ^ I've commented out these lines because I prefer that if you supply an
+    #       incorrect value your script will continue to work in  DEBUG  level logging
+    #       rather than crash.
 
 
 function LogWrite {
@@ -64,26 +77,30 @@ function LogWrite {
     # Logging using "LogWrite" mimics the syslog format I use in my open source
     # python code.
 
-    local LogLevelText=${1:-ERROR}
-        # ^ Holds the log level (ERROR, INFO, etc) of the calling log line
+    local CallingLineLogLevel=${1:-ERROR}
+        # ^ Holds the log level (ERROR, INFO, etc) of the calling log line.
+        #   Note - if you called LogWrite with no args then the log level which
+        #       was supposed to be sent in:  $1 will be forced to:  ERROR .
+        #       Also, $2 will be missing and it too will be preset by rhinolib
+        #       to an error message which indicates the message part was missing.
 
-    LogLevelText="${LogLevelText^^}"    # Uppercase it
+    CallingLineLogLevel="${CallingLineLogLevel^^}"    # Uppercase it
 
     # Is the calling log level text correct?
-    # Note - if you forgot to supply the log level text as $1 and only supplied
-    # the log line (which will be $1) - it will be overwritten by this code block,
-    # meaning you get "ERROR" and no log line content:
-    case "${LogLevelText}" in
-        NONE | CRITICAL | ERROR | WARNING | INFO | DEBUG )     :;;
-        *)                                              LogLevelText="ERROR";;
+    # Note - if you didn't send the log level correctly it will be forced
+    #   here to:  ERROR  which hopefully will cause you to notice that your
+    #   logging is wrong and you'll fix the log level in your caller:
+    case "${CallingLineLogLevel}" in
+        NONE | CRITICAL | ERROR | WARNING | INFO | DEBUG )      :;;
+        *)                                                      CallingLineLogLevel="ERROR";;
     esac
 
     local LogText=
     local -a RecordMsgSplitNL=()
         # ^ Split the message sent to LogWrite into an array of lines
-        #   at the newline character
+        #       at the newline character.
     local -a SplitLinesMessage=()
-        # ^ Final version of line splitting
+        # ^ Final version of line splitting after we do some processing in rhinolib.
     local LoggerText
 
     # This block will stop processing if the script's ScriptMaxLogLevel is lower than the
@@ -93,12 +110,12 @@ function LogWrite {
     [[ "${ScriptMaxLogLevel^^}" == "NONE" ]] && return
         # ^ Script requested no logging
 
-    [[ "${ScriptMaxLogLevel^^}" == "CRITICAL" && "${LogLevelText}" != "CRITICAL" ]] && return
+    [[ "${ScriptMaxLogLevel^^}" == "CRITICAL" && "${CallingLineLogLevel}" != "CRITICAL" ]] && return
         # ^ Only CRITICAL level logging
 
     [[ "${ScriptMaxLogLevel^^}" == "ERROR" ]] && \
         {
-        case "${LogLevelText}" in
+        case "${CallingLineLogLevel}" in
             WARNING | INFO | DEBUG )    return;;
         esac
         }
@@ -106,31 +123,28 @@ function LogWrite {
 
     [[ "${ScriptMaxLogLevel^^}" == "WARNING" ]] && \
         {
-        case "${LogLevelText}" in
+        case "${CallingLineLogLevel}" in
             INFO | DEBUG )    return;;
         esac
         }
         # ^ Only CRITICAL, ERROR and WARNING level logging
 
-    [[ "${ScriptMaxLogLevel^^}" == "INFO" && "${LogLevelText}" == "DEBUG" ]] && return
+    [[ "${ScriptMaxLogLevel^^}" == "INFO" && "${CallingLineLogLevel}" == "DEBUG" ]] && return
         # ^ Log level INFO means only DEBUG is not allowed
 
-    [[ "${ScriptMaxLogLevel^^}" == "DEBUG" ]] && \
-        {
-        :
-        } || {
-        ScriptMaxLogLevel="NotSetCorrectly"
-            # Best to crash the script if ScriptMaxLogLevel wasn't set correctly.
-            # Check the value of ScriptMaxLogLevel - it should be one of the
-            # allowed values.
-        }
-
+    #[[ "${ScriptMaxLogLevel^^}" == "DEBUG" ]] && :
+        # ^ Log level DEBUG means everything is allowed
+        #   Commenting out this line means it will accept  DEBUG  level or
+        #       any invalid text supplied in this variable.
+        #   If you wish to enforce correct values in this variable - uncomment
+        #       this test and uncomment the test earlier in this script.
 
     shift       # Message was sent in $2
-    LogText="${1:-"Check if you supplied Log Level and Error message args to LogWrite"}"
-    # ^ Check if log message was supplied else set it to a warning message
+    LogText="${1:-"Check if you supplied Log Level and Error message args to the calling LogWrite"}"
+        # ^ Looks like there's no  $2  argument  in your  LogWrite  line, so we'll
+        #       force some log text for you, hopefully you'll pick this up in your logging output.
 
-    # Now we have the message, code for line splitting follows:
+    # Now we have the message, the code for line splitting follows:
 
     #LogText="${LogText//$'\n'/__|__}"
     # ^ Uncomment if you don't want newlines in your logged text
@@ -231,15 +245,15 @@ function LogWrite {
         # Used to be this code that did columized formatting, but now I'm
         # keeping it in line with my python3 logging:
         #LoggerText=$(printf "%-8s %-12s %-8s (%s) %s\n" \
-        #    "${LogLevelText}" "[${ScriptName::10}]" \
+        #    "${CallingLineLogLevel}" "[${ScriptName::10}]" \
         #    "[${ProcID}]" "${FUNCNAME[1]:-"UNKNOWN"}" "${LineLooper}")
 
         # This code is for syslog:
-        #LoggerText="<${LogLevelText}> ($(date +%Y-%m-%d\ %H:%M:%S.%3N) , MN: ${ScriptName} , FN: ${FUNCNAME[1]:-UNKNOWN} , LI: ${BASH_LINENO}):    ${LineLooper}"
+        #LoggerText="<${CallingLineLogLevel}> ($(date +%Y-%m-%d\ %H:%M:%S.%3N) , MN: ${ScriptName} , FN: ${FUNCNAME[1]:-UNKNOWN} , LI: ${BASH_LINENO}):    ${LineLooper}"
         #logger --id "${ProcID}" --tag "${SyslogProgName}" "${LoggerText}"
 
         # This code is for systemd / journalctl (but also logs to syslog properly):
-        LoggerText="<${LogLevelText}> (PID: ${ProcID} , MN: ${ScriptName} , FN: ${FUNCNAME[1]:-UNKNOWN} , LI: ${BASH_LINENO}):    ${LineLooper}"
+        LoggerText="<${CallingLineLogLevel}> (PID: ${ProcID} , MN: ${ScriptName} , FN: ${FUNCNAME[1]:-UNKNOWN} , LI: ${BASH_LINENO}):    ${LineLooper}"
         # ^ Note - in journalctl the PID of the logger program is displayed inside the:     ProgramName[6923]:      rather than the PID of the script.
         #   Therefore I am adding the PID manually as a field inside the (...) section.
         #   For example:    Jul 03 13:17:09 asus303 ProgramName[7155]: <DEBUG> (PID: 7143 , MN: ScriptName
@@ -275,9 +289,12 @@ function ExitScript {
 
     (( $ExitCode !=0 )) && \
         {
-        # Perhaps this causes duplicate writes to this file?
-        LogWrite error "Exit code not zero, writing timestamp to FailureTrapFile..."
-        WriteErrorFile "Exit code not zero"
+        LogWrite error "Exit code not zero, writing message to FailureTrapFile..."
+        #WriteErrorFile "Exit code not zero"
+            # ^ Ken disabled this on 2021-08-09 because sometimes we intentionally want to exit
+            #       non-zero from our script and that's not necessarily an error - therefore
+            #       in this case if the developer wants to write a line to the error file - it
+            #       must be done explicilty via a call to function:  WriteErrorFile .
         }
 
     trap '' EXIT
@@ -313,6 +330,9 @@ function WriteErrorFile {
 
     LogWrite debug "Function WriteErrorFile started"
     printf "%s  %s  %s; \n" "$(date +%Y-%m-%d\ %H:%M:%S.%3N)" "[${ScriptName}]" "${*}" >> "${FailureTrapFile}"
+    LogWrite error "Wrote error line to ErrorFile: ${FailureTrapFile}"
+        # ^ This is log level "error" to indicate that an error message was written -
+        #       otherwise it may be skipped in syslog/journal if the script log level is set higher.
     LogWrite debug "Function WriteErrorFile ended"
 }
 
