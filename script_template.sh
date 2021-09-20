@@ -3,6 +3,8 @@
 # This script originates from the master script file that comes with rhinolib.
 # Edit and reuse this script to take advantage of rhinolib functions.
 # For details refer to github:  https://github.com/flyingrhinonz/rhinolib_bash .
+#
+# Place a description of your script here.
 
 
 set -o nounset      # Crash when an unset variable is used
@@ -11,7 +13,7 @@ set -o errexit      # Exit when a command fails
 set -o pipefail     # Capture and crash when pipes failed anywhere in the pipe
 
 
-declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.10 , 2021-08-09 , by YOUR NAME ( YOUR EMAIL )"
+declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.12 , 2021-09-21 , by YOUR NAME ( YOUR EMAIL )"
 
 declare -r ProcID="$(echo $$)"
     # ^ Script process ID for logging purposes
@@ -35,9 +37,9 @@ declare -r ScriptMaxLogLevel="debug"
 declare -r SyslogProgName="ProgramName"
     # ^ This is 'ProgramName' in syslog line (just before the PID value)
     #   Different from ScriptName because ProgramName allows syslog to filter
-    #     and log lines with this value in different files.
+    #       and log lines with this value in different files.
     #   So you can configure syslog to log all your programs to your
-    #     own log file by using your own ProgramName here.
+    #       own log file by using your own ProgramName here.
     #   In journalctl use this for tailing based on ProgramName:
     #     journalctl -fa -o short-iso -t ProgramName
 
@@ -46,7 +48,7 @@ declare -r OriginalIFS="${IFS}"
 
 
 . /usr/local/lib/rhinolib.sh || {
-    echo "Cannot source /usr/local/lib/rhinolib.sh . Aborting!"
+    echo "Cannot source:  /usr/local/lib/rhinolib.sh . Aborting!"
     exit 150
     }
 
@@ -60,7 +62,10 @@ trap 'ExitScript' EXIT
 
 SymLinkResolved="(Symlink resolved: $( readlink --quiet --no-newline $0 )) " || SymLinkResolved=""
 LogWrite info "${ScriptVersion}"
-LogWrite debug "Invoked commandline: $0 $* ${SymLinkResolved}, from directory: ${PWD:-unknown} , by user: $UID: ${CurrentUser:-unknown} , ProcID: ${ProcID} , PPID: ${PPID:-unknown} , Script max log level: ${ScriptMaxLogLevel}"
+LogWrite info "Invoked commandline: $0 $* ${SymLinkResolved}, from directory: ${PWD:-unknown} , by user: $UID: ${CurrentUser:-unknown} , ProcID: ${ProcID} , PPID: ${PPID:-unknown} , Script max log level: ${ScriptMaxLogLevel}"
+
+
+# Setup variables here:
 
 
 # Script body begins here. Put your code below this:
