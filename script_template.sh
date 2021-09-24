@@ -13,7 +13,7 @@ set -o errexit      # Exit when a command fails
 set -o pipefail     # Capture and crash when pipes failed anywhere in the pipe
 
 
-declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.13 , 2021-09-25 , by YOUR NAME ( YOUR EMAIL )"
+declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.14 , 2021-09-25 , by YOUR NAME ( YOUR EMAIL )"
 
 declare -r ProcID="$(echo $$)"
     # ^ Script process ID for logging purposes
@@ -64,6 +64,10 @@ SymLinkResolved="(Symlink resolved: $( readlink --quiet --no-newline $0 )) " || 
 LogWrite info "${ScriptVersion}"
 LogWrite info "Invoked commandline: $0 $* ${SymLinkResolved}, from directory: ${PWD:-unknown} , by user: $UID: ${CurrentUser:-unknown} , ProcID: ${ProcID} , PPID: ${PPID:-unknown} , Script max log level: ${ScriptMaxLogLevel}"
 LogWrite info "Fields explained: PID: Script PID , MN: Module (script) Name , FN: Function Name , LI: LIne number"
+    # ^ The reason we have a PID in here is because journalctl logs the PID of the 'logger' command
+    #       (that is used to do the actual logging, and this changes every time a line is logged)
+    #       and not the PID of the actual script.
+    #   MN field is present to keep this log line identical to the log line I use in my python code.
 
 
 # Setup variables here:
