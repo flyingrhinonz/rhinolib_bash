@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.3
-# Date:         2021-08-09
+# Version:      1.6.4
+# Date:         2021-09-25
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3.
@@ -154,7 +154,7 @@ function LogWrite {
     LogText="${LogText//$'\t'/    }"
 
     # Expand messages containing \n to new line:
-    # Otherwise a message such as   LogWrite 4 "hello\nline"
+    # Otherwise a message such as   LogWrite warning "hello\nline"
     # appears as one line with the same literal txt
     [[ "${ExpandBSN}" == "yes" ]] && \
         {
@@ -437,7 +437,7 @@ function BackupFile {
     # This function creates Dest Dir if it does not exist.
     # Returns exit code == 0 if all successful else exit code == 1
     #
-    # Usage: BackupFile "/usr/local/bin/test.sh" "/tmp/" || LogWrite 4 "backup failed"
+    # Usage: BackupFile "/usr/local/bin/test.sh" "/tmp/" || LogWrite warning "backup failed"
     #   Always include the || or && at the end of the backup command to catch events that fail
     #   otherwise a failed backup could crash your script as a failed command.
 
