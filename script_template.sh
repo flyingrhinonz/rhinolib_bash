@@ -13,7 +13,7 @@ set -o errexit      # Exit when a command fails
 set -o pipefail     # Capture and crash when pipes failed anywhere in the pipe
 
 
-declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.12 , 2021-09-21 , by YOUR NAME ( YOUR EMAIL )"
+declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.13 , 2021-09-25 , by YOUR NAME ( YOUR EMAIL )"
 
 declare -r ProcID="$(echo $$)"
     # ^ Script process ID for logging purposes
@@ -63,6 +63,7 @@ trap 'ExitScript' EXIT
 SymLinkResolved="(Symlink resolved: $( readlink --quiet --no-newline $0 )) " || SymLinkResolved=""
 LogWrite info "${ScriptVersion}"
 LogWrite info "Invoked commandline: $0 $* ${SymLinkResolved}, from directory: ${PWD:-unknown} , by user: $UID: ${CurrentUser:-unknown} , ProcID: ${ProcID} , PPID: ${PPID:-unknown} , Script max log level: ${ScriptMaxLogLevel}"
+LogWrite info "Fields explained: PID: Script PID , MN: Module (script) Name , FN: Function Name , LI: LIne number"
 
 
 # Setup variables here:
