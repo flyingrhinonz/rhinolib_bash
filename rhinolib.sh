@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.4
-# Date:         2021-09-25
+# Version:      1.6.6
+# Date:         2021-09-27
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3.
@@ -462,12 +462,14 @@ function BackupFile {
 
     local FileName="$(basename "${1}")"
     local TimeStamp="$(date +%Y-%m-%d_%H%M%S)"
-    cp "${1}" "${2}"/"${TimeStamp}"_"${FileName}" && \
+    # Note - $2 might come with a trailing slash and since we specify it manually
+    #   in the copy command, we need to remove it from $2 with %%/
+    cp "${1}" "${2%%/}"/"${TimeStamp}"_"${FileName}" && \
         {
-        LogWrite info "Successfully copied: ${1} to: ${2}/${TimeStamp}_${FileName}"
+        LogWrite info "Successfully copied: ${1} to: ${2%%/}/${TimeStamp}_${FileName}"
         return 0
         } || {
-        LogWrite warning "Error copying: ${1} to: ${2}/${TimeStamp}_${FileName}"
+        LogWrite warning "Error copying: ${1} to: ${2%%/}/${TimeStamp}_${FileName}"
         return 1
         }
 }
