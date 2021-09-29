@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.6
-# Date:         2021-09-27
+# Version:      1.6.8
+# Date:         2021-09-28
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3.
@@ -186,7 +186,7 @@ function LogWrite {
             } || {
 
             # Long line detected, need to split:
-            FullLineLength=${#LineLooper}
+            local FullLineLength=${#LineLooper}
 
             # Figure out how many lines of length MaxLogLineLength we need to split into:
             local -i NumOfSplits=$(( ${FullLineLength} / ${MaxLogLineLength} ))
@@ -199,6 +199,7 @@ function LogWrite {
                 (( NumOfSplits++ )) || true
                 }
 
+            local SLALooper
             for (( SLALooper=0; SLALooper<${NumOfSplits}; SLALooper++ ))
                 do
                 local -i StartIndex=$(( SLALooper * ${MaxLogLineLength} ))
@@ -231,7 +232,7 @@ function LogWrite {
         do
         (( $Counter > 0 )) && \
             {
-            TempString="${IndentString}${LineLooper}"
+            local TempString="${IndentString}${LineLooper}"
             SplitLinesMessage[$Counter]="${TempString}"
             }
         (( Counter++ )) || true
@@ -486,4 +487,41 @@ function LogNftRules {
     LogWrite info "${NftRules}"
     LogWrite info "NFT OUTPUT LOGGING ENDED ABOVE FOR: ${1}"
 }
+
+
+function CheckIfSelinuxPresent {
+
+    #   This function checks if selinux is present (permissive or enabled)
+    #       and returns 0 if 'yes' or 1 if 'no'.
+    #   The primary use case here is to make a decision whether
+    #       to set selinux permissions on files if selinux is present - the deciding
+    #       factor is whether there is selinux or not, and not whether selinux is
+    #       disabled/permissive vs enforcing.
+    #   If selinux is disabled or the getenforce command doesn't exist or returns
+    #       some form of error - we say that selinux is not present.
+    #
+    #   Usage: CheckIfSelinuxPresent && echo "present" || echo "absent"
+
+    local Result="$( /sbin/getenforce 2>&1 || : )"
+    Result="${Result,,}"    # Lowercase it
+    LogWrite debug "Checking /sbin/getenforce :  Result == ${Result}"
+    [[ "${Result}" =~ (permissive|enforcing) ]] && return 0 || return 1
+}
+
+
+function CheckIfEnhancedGetopt {
+
+    #   Enhanced getopt has advantages over the builtin getops and the older getopt command.
+
+    local Result="$( /bin/getopt -T &>/dev/null && echo $? || echo $? )"
+    (( ${Result} == 4 )) && \
+        {
+        LogWrite debug "Result == ${Result}  -> Enhanced getopt command found"
+        return 0
+        } || {
+        LogWrite warning "Result == ${Result}  -> Enhanced getopt command not found or error occurred"
+        return 1
+        }
+}
+
 
