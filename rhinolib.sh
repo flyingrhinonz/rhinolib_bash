@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.8
-# Date:         2021-09-28
+# Version:      1.6.9
+# Date:         2021-10-01
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3.
@@ -12,8 +12,6 @@
 # Calling script must have these vars configured:
 #   ProcID, ScriptName, ScriptMaxLogLevel, SyslogProgName
 # See example:  script_template.sh  for examples.
-# In order to use function:  LogNftRules  - you must define the:  NftCommand
-#   variable in your calling script as the path to nftables:  'nft'  command.
 #
 # Using this library will give you summary failure logs in
 #   /tmp/rhinolib_script_errors . Use it as a reference if required.
@@ -433,16 +431,19 @@ function DoYouWantToProceed {
 
 function BackupFile {
 
-    # $1 = Source file
-    # $2 = Dest dir
-    # This function creates Dest Dir if it does not exist.
-    # Returns exit code == 0 if all successful else exit code == 1
+    #   $1 = Source file
+    #   $2 = Dest dir
     #
-    # Usage: BackupFile "/usr/local/bin/test.sh" "/tmp/" || LogWrite warning "backup failed"
-    #   Always include the || or && at the end of the backup command to catch events that fail
-    #   otherwise a failed backup could crash your script as a failed command.
+    #   Backs up source:  $1  to destination:  DIRECTORY $2
+    #       and creates Dest Dir if it does not exist.
+    #   Returns exit code == 0 if all successful else exit code == 1
+    #   This function is designed to backup a single source file, do not supply wildcards!
+    #
+    #   Usage: BackupFile "/usr/local/bin/test.sh" "/tmp/" || LogWrite warning "backup failed"
+    #       Always include the || or && at the end of the backup command to catch events that fail
+    #       otherwise a failed backup could crash your script as a failed command.
 
-    LogWrite debug "BackupFile called with args: $*"
+    LogWrite debug "BackupFile called with args:  $*"
     (( $# != 2 )) && \
         {
         LogWrite warning "Incorrect number of arguments. Expecting 2"
@@ -451,26 +452,31 @@ function BackupFile {
 
     [[ -f "${1}" ]] || \
         {
-        LogWrite warning "Cannot find source file: ${1}"
+        LogWrite warning "Cannot find source file:  ${1}"
         return 1
         }
 
     mkdir --parents "${2}" || \
         {
-        LogWrite warning "Error creating directory ${2}"
+        LogWrite warning "Error creating directory:  ${2}"
         return 1
         }
 
     local FileName="$(basename "${1}")"
     local TimeStamp="$(date +%Y-%m-%d_%H%M%S)"
-    # Note - $2 might come with a trailing slash and since we specify it manually
-    #   in the copy command, we need to remove it from $2 with %%/
-    cp "${1}" "${2%%/}"/"${TimeStamp}"_"${FileName}" && \
+    local TargetName="${2%%/}/${FileName}_${TimeStamp}"
+    LogWrite debug "Source file == ${1} , Target dir == ${2} , FileName (source file basename) == ${FileName} , TimeStamp == ${TimeStamp} , TargetName == ${TargetName}"
+
+    #   Note - $2 might come with a trailing slash and since we specify it manually
+    #       in the copy command, we need to remove it from $2 with %%/   .
+    #   Note - I'm using:  "cp --archive"  because I want to preserve the attributes -
+    #       especially the selinux context.
+    cp --archive "${1}" "${TargetName}" && \
         {
-        LogWrite info "Successfully copied: ${1} to: ${2%%/}/${TimeStamp}_${FileName}"
+        LogWrite info "Successfully copied:  ${1}  to:  ${TargetName}"
         return 0
         } || {
-        LogWrite warning "Error copying: ${1} to: ${2%%/}/${TimeStamp}_${FileName}"
+        LogWrite warning "Error copying:  ${1}  to:  ${TargetName}"
         return 1
         }
 }
@@ -481,7 +487,7 @@ function LogNftRules {
     # ^ Supply some identifying text within the "..." so that you can find it in the logs
 
     LogWrite info "NFT OUTPUT LOGGING STARTS BELOW FOR: ${1}"
-    local NftRules="$(sudo ${NftCommand} list ruleset -nn --handle 2>&1)"
+    local NftRules="$(sudo /usr/sbin/nft list ruleset -nn --handle 2>&1)"
         # ^ May need to check if the script's user can sudo, else I need
         #   to log it with an error and return 1
     LogWrite info "${NftRules}"
@@ -504,7 +510,7 @@ function CheckIfSelinuxPresent {
 
     local Result="$( /sbin/getenforce 2>&1 || : )"
     Result="${Result,,}"    # Lowercase it
-    LogWrite debug "Checking /sbin/getenforce :  Result == ${Result}"
+    LogWrite debug "Checking:  /sbin/getenforce  -->  Result == ${Result}"
     [[ "${Result}" =~ (permissive|enforcing) ]] && return 0 || return 1
 }
 
