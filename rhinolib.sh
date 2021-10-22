@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.9
-# Date:         2021-10-01
+# Version:      1.6.10
+# Date:         2021-10-21
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3.
@@ -371,12 +371,12 @@ function IsAlnum2 {
 
 
 function CatToFile {
-    # Cats text to filename after confirming filename ends in \n
-    # Else adds \n before the text
-        # $1 filename to modify. If $1 doesn't exist it is created
-        # $2 text to add. Remember to quote the text before calling,
-        #   not using shift;$* to ease debugging of quoting problems
-    # This function returns exit code 1 if it can't complete the request successfully.
+    #   Cats (appends) text to filename after confirming filename ends in \n
+    #   Else adds \n before the text
+    #       $1 filename to modify. If $1 doesn't exist it is created.
+    #       $2 text to add. Remember to quote the text before calling,
+    #           not using shift;$* to ease debugging of quoting problems.
+    #   This function returns exit code 1 if it can't complete the request successfully.
 
     [ -d "$1" ] && \
         {
@@ -386,8 +386,9 @@ function CatToFile {
 
     if [[ -f "$1" ]] && [[ -s "$1" ]]   # Regular file non-zero size
         then
-            [ "`tail -c 1 $1`" != "" ] && echo >> "$1"  # Line doesn't end in \n
-            # Another way of doing it is:  tail -c 1 testfile | hexdump | cut -d " " -f 2 | head -n 1
+        [[ "$( tail -c 1 $1 )" != "" ]] && echo >> "$1" || :
+            # ^ Line doesn't end in:  \n  so append an empty line to the end of the file.
+            #   Another way of doing it is:  tail -c 1 testfile | hexdump | cut -d " " -f 2 | head -n 1
     fi
     echo "$2" >> "$1" || \
         {
