@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.10
-# Date:         2021-10-21
+# Version:      1.6.11
+# Date:         2021-10-25
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3.
@@ -63,17 +63,33 @@ declare -r ExpandBSN="yes"
 
 
 function LogWrite {
-    # Usage LogWrite <LOG_LEVEL> <LOG_TEXT>
-    # LOG_LEVEL must be one of: none, critical, error, warning, info, debug
-    # and is case insensitive.
+    #   Usage: LogWrite [-e] <LOG_LEVEL> <LOG_TEXT>
+    #   LOG_LEVEL must be one of: none, critical, error, warning, info, debug
+    #       and is case insensitive.
     #
-    # Send whatever LOG_TEXT string you want - with or without newlines,
-    # and as long as you want. LogWrite will split the string into shorter log lines
-    # if necessary (per MaxLogLineLength setting) , and handle indentation
-    # chars for the new lines.
+    #   Send whatever LOG_TEXT string you want - with or without newlines,
+    #       and as long as you want. LogWrite will split the string into shorter log lines
+    #       if necessary (per MaxLogLineLength setting) , and handle indentation
+    #       chars for the new lines.
     #
-    # Logging using "LogWrite" mimics the syslog format I use in my open source
-    # python code.
+    #   Logging using "LogWrite" mimics the syslog format I use in my open source
+    #       python code.
+    #
+    #   Examples:
+    #       LogWrite debug "This is a debug level log - written to log file only"
+    #       LogWrite -e info "This line is logged and also printed to the screen"
+
+    local EchoFlag="false"
+        # ^ If flag is set then echo text too
+
+    # Special flags can be supplied to LogWrite. Check if any are present:
+    [[ $# > 0 ]] && \
+        case "${1}" in
+            "-e")   EchoFlag="true"
+                        # ^ Set the:  EchoFlag  so that we can print the line to screen too
+                    shift;;
+            *)      :;;
+        esac
 
     local CallingLineLogLevel=${1:-ERROR}
         # ^ Holds the log level (ERROR, INFO, etc) of the calling log line.
@@ -95,10 +111,11 @@ function LogWrite {
 
     local LogText=
     local -a RecordMsgSplitNL=()
-        # ^ Split the message sent to LogWrite into an array of lines
-        #       at the newline character.
+        # ^ This array will hold the message sent to Logrite as an array of lines
+        #       split at the newline character.
     local -a SplitLinesMessage=()
-        # ^ Final version of line splitting after we do some processing in rhinolib.
+        # ^ This array will hold the final version of line splitting after we do
+        #       some processing in rhinolib.
     local LoggerText
 
     # This block will stop processing if the script's ScriptMaxLogLevel is lower than the
@@ -141,6 +158,10 @@ function LogWrite {
     LogText="${1:-"Check if you supplied Log Level and Error message args to the calling LogWrite"}"
         # ^ Looks like there's no  $2  argument  in your  LogWrite  line, so we'll
         #       force some log text for you, hopefully you'll pick this up in your logging output.
+
+    [[ "${EchoFlag}" == "true" ]] && echo "${LogText}" || :
+        # ^ EchoFlag was set - print the log line to screen too.
+        #   No fancy text processing is done on this line - it is printed exactly as supplied.
 
     # Now we have the message, the code for line splitting follows:
 

@@ -13,7 +13,7 @@ set -o errexit      # Exit when a command fails
 set -o pipefail     # Capture and crash when pipes failed anywhere in the pipe
 
 
-declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.14 , 2021-09-25 , by YOUR NAME ( YOUR EMAIL )"
+declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.15 , 2021-10-25 , by YOUR NAME ( YOUR EMAIL )"
 
 declare -r ProcID="$(echo $$)"
     # ^ Script process ID for logging purposes
@@ -85,7 +85,9 @@ LogWrite error "Major error in the system, but normally not in the script itself
 LogWrite warning "Normally a warning about various conditions. Script continues to run"
 
 # Information condition logs:
-LogWrite info "Information for regular operators to interpret"
+LogWrite -e info "Info level log + output to screen"
+    # ^ This line uses:  -e  to tell LogWrite to write log + print to screen.
+    #   You can use:  -e  on any log level.
 LogWrite debug "Information for advanced engineers/developers to interpret"
     # ^ A very long line from shakespere used for testing log line splitting
 
