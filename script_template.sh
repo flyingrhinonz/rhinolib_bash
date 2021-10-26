@@ -85,9 +85,9 @@ LogWrite error "Major error in the system, but normally not in the script itself
 LogWrite warning "Normally a warning about various conditions. Script continues to run"
 
 # Information condition logs:
-LogWrite -e info "Info level log + output to screen"
-    # ^ This line uses:  -e  to tell LogWrite to write log + print to screen.
-    #   You can use:  -e  on any log level.
+LogWrite -t info "Info level log + output to screen"
+    # ^ This line uses:  -t  to tell LogWrite to write log + print to screen.
+    #   You can use:  -t  on any log level.
 LogWrite debug "Information for advanced engineers/developers to interpret"
     # ^ A very long line from shakespere used for testing log line splitting
 

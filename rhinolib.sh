@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.11
-# Date:         2021-10-25
+# Version:      1.6.12
+# Date:         2021-10-26
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3.
@@ -63,7 +63,7 @@ declare -r ExpandBSN="yes"
 
 
 function LogWrite {
-    #   Usage: LogWrite [-e] <LOG_LEVEL> <LOG_TEXT>
+    #   Usage: LogWrite [-t] <LOG_LEVEL> <LOG_TEXT>
     #   LOG_LEVEL must be one of: none, critical, error, warning, info, debug
     #       and is case insensitive.
     #
@@ -72,22 +72,29 @@ function LogWrite {
     #       if necessary (per MaxLogLineLength setting) , and handle indentation
     #       chars for the new lines.
     #
+    #   If you supply the optional:  -t  arg, LogWrite will also send the log line
+    #       to stdout (echo) which mimics the linux tee feature.
+    #       Note - the echoed line will be printed as supplied without any of the
+    #       fancy LogWrite string manipulation.
+    #
     #   Logging using "LogWrite" mimics the syslog format I use in my open source
     #       python code.
     #
     #   Examples:
     #       LogWrite debug "This is a debug level log - written to log file only"
-    #       LogWrite -e info "This line is logged and also printed to the screen"
+    #       LogWrite -t info "This line is logged and also printed to the screen"
 
-    local EchoFlag="false"
-        # ^ If flag is set then echo text too
+    local TeeFlag="false"
+        # ^ If flag is set then echo the message too.
 
     # Special flags can be supplied to LogWrite. Check if any are present:
-    [[ $# > 0 ]] && \
+    (( $# > 0 )) && \
         case "${1}" in
-            "-e")   EchoFlag="true"
-                        # ^ Set the:  EchoFlag  so that we can print the line to screen too
+            "-t")   TeeFlag="true"
+                        # ^ Set the:  TeeFlag  so that we can print the line to screen too
                     shift;;
+                        # ^ We need this because the rest of LogWrite function assumes that
+                        #       it is called with $1 (log level) and $2 (log message).
             *)      :;;
         esac
 
@@ -159,8 +166,8 @@ function LogWrite {
         # ^ Looks like there's no  $2  argument  in your  LogWrite  line, so we'll
         #       force some log text for you, hopefully you'll pick this up in your logging output.
 
-    [[ "${EchoFlag}" == "true" ]] && echo "${LogText}" || :
-        # ^ EchoFlag was set - print the log line to screen too.
+    [[ "${TeeFlag}" == "true" ]] && echo "${LogText}" || :
+        # ^ TeeFlag was set - print the log line to screen too.
         #   No fancy text processing is done on this line - it is printed exactly as supplied.
 
     # Now we have the message, the code for line splitting follows:
@@ -294,18 +301,46 @@ function LogWrite {
 
 
 function ExitScript {
-    # Exit script properly and write log file
-    # Format: ExitScript <ERRORLEVEL> <EXITCODE> <REASON>
-    #   ERRORLEVEL  - one of: critical, error, warning, info, debug
-    #   EXITCODE    - 0 for success, 1-255 for failure
-    #   REASON      - plaintext that will be logged at exit time
+    #   Exit script properly and write log file.
+    #
+    #   Format: ExitScript [-t] <ERRORLEVEL> <EXITCODE> <REASON>
+    #       ERRORLEVEL  - one of: critical, error, warning, info, debug
+    #       EXITCODE    - 0 for success, 1-255 for failure
+    #       REASON      - plaintext that will be logged at exit time
+    #
+    #   If you supply the optional:  -t  arg, ExitScript will also send the log line
+    #       to stdout (echo) which mimics the linux tee feature.
+    #       Note - the echoed line will be printed as supplied without any of the
+    #       fancy LogWrite string manipulation.
+    #
+    #   Examples:
+    #       ExitScript error 150 "error occurred"           # Log an error and exit
+    #       ExitScript -t error 150 "Must be run as root"   # Log + print message and exit
 
-    LogWrite debug "Function ExitScript started with args: $*"
+    LogWrite debug "Function ExitScript started"
+
+    local TeeFlag="false"
+        # ^ If flag is set then echo the message too.
+
+    # Special flags can be supplied to ExitScript. Check if any are present:
+    (( $# > 0 )) && \
+        case "${1}" in
+            "-t")   TeeFlag="true"
+                        # ^ Set the:  TeeFlag  so that we can print the line to screen too.
+                    shift;;
+                        # ^ We need this because the rest of LogWrite function assumes that
+                        #       it is called with $1 (log level) and $2 (log message).
+            *)      :;;
+        esac
+
     local LogLevel="${1:-"error"}"
     shift || :
     local -i ExitCode="${1:-"150"}"
     shift || :
     local ExitReason="${*:-"Error (a more specific exit reason was not supplied)"}"
+
+    [[ "${TeeFlag}" == "true" ]] && echo "${ExitReason}" || :
+        # ^ TeeFlag was set - print the log line to screen too.
 
     (( $ExitCode !=0 )) && \
         {
@@ -319,7 +354,7 @@ function ExitScript {
 
     trap '' EXIT
         # ^ Stop the exit error trap because we really want to exit here!
-    LogWrite "${LogLevel}" "Script end, runtime $SECONDS seconds. Exit code: ${ExitCode} . Exit reason: ${ExitReason}"
+    LogWrite "${LogLevel}" "Script end, runtime:  $SECONDS  seconds. Exit code:  ${ExitCode} . Exit reason:  ${ExitReason}"
     exit "$ExitCode"
 }
 
