@@ -13,7 +13,7 @@ set -o errexit      # Exit when a command fails
 set -o pipefail     # Capture and crash when pipes failed anywhere in the pipe
 
 
-declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.15 , 2021-10-25 , by YOUR NAME ( YOUR EMAIL )"
+declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.16 , 2021-10-30 , by YOUR NAME ( YOUR EMAIL )"
 
 declare -r ProcID="$(echo $$)"
     # ^ Script process ID for logging purposes
@@ -49,6 +49,7 @@ declare -r OriginalIFS="${IFS}"
 
 . /usr/local/lib/rhinolib.sh || {
     echo "Cannot source:  /usr/local/lib/rhinolib.sh . Aborting!"
+    logger -t "${SyslogProgName}" "Cannot source:  /usr/local/lib/rhinolib.sh . Aborting!"
     exit 150
     }
 
