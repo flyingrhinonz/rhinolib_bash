@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.12
-# Date:         2021-10-26
+# Version:      1.6.13
+# Date:         2021-10-27
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3.
@@ -328,8 +328,8 @@ function ExitScript {
             "-t")   TeeFlag="true"
                         # ^ Set the:  TeeFlag  so that we can print the line to screen too.
                     shift;;
-                        # ^ We need this because the rest of LogWrite function assumes that
-                        #       it is called with $1 (log level) and $2 (log message).
+                        # ^ We need this because the rest of ExitScript function assumes that
+                        #       it is called with $1, $2, $3 args.
             *)      :;;
         esac
 
