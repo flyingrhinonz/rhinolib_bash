@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.13
-# Date:         2021-10-27
+# Version:      1.6.14
+# Date:         2021-11-12
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3.
@@ -292,7 +292,7 @@ function LogWrite {
         #   Also journalctl can show proper dates, so I removed the date field. Use this to read the journal:
         #     journalctl -fa -o short-iso -t ProgramName
 
-        logger -t "${SyslogProgName}" "${LoggerText}"
+        /usr/bin/logger -t "${SyslogProgName}" "${LoggerText}"
         # ^ Don't need the --id for systemd as it's already added into journalctl incorrectly (it logs the PID of 'logger')
         #   and I send it manually inside the (...). See note above.
 
@@ -442,9 +442,9 @@ function CatToFile {
 
     if [[ -f "$1" ]] && [[ -s "$1" ]]   # Regular file non-zero size
         then
-        [[ "$( tail -c 1 $1 )" != "" ]] && echo >> "$1" || :
+        [[ "$( /bin/tail -c 1 $1 )" != "" ]] && echo >> "$1" || :
             # ^ Line doesn't end in:  \n  so append an empty line to the end of the file.
-            #   Another way of doing it is:  tail -c 1 testfile | hexdump | cut -d " " -f 2 | head -n 1
+            #   Another way of doing it is:  /bin/tail -c 1 testfile | hexdump | cut -d " " -f 2 | head -n 1
     fi
     echo "$2" >> "$1" || \
         {
@@ -519,16 +519,16 @@ function BackupFile {
         return 1
         }
 
-    local FileName="$(basename "${1}")"
+    local FileName="$( /bin/basename "${1}" )"
     local TimeStamp="$(date +%Y-%m-%d_%H%M%S)"
     local TargetName="${2%%/}/${FileName}_${TimeStamp}"
     LogWrite debug "Source file == ${1} , Target dir == ${2} , FileName (source file basename) == ${FileName} , TimeStamp == ${TimeStamp} , TargetName == ${TargetName}"
 
     #   Note - $2 might come with a trailing slash and since we specify it manually
     #       in the copy command, we need to remove it from $2 with %%/   .
-    #   Note - I'm using:  "cp --archive"  because I want to preserve the attributes -
+    #   Note - I'm using:  "/bin/cp --archive"  because I want to preserve the attributes -
     #       especially the selinux context.
-    cp --archive "${1}" "${TargetName}" && \
+    /bin/cp --archive "${1}" "${TargetName}" && \
         {
         LogWrite info "Successfully copied:  ${1}  to:  ${TargetName}"
         return 0

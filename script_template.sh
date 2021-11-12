@@ -13,7 +13,7 @@ set -o errexit      # Exit when a command fails
 set -o pipefail     # Capture and crash when pipes failed anywhere in the pipe
 
 
-declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.16 , 2021-10-30 , by YOUR NAME ( YOUR EMAIL )"
+declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.17 , 2021-11-12 , by YOUR NAME ( YOUR EMAIL )"
 
 declare -r ProcID="$(echo $$)"
     # ^ Script process ID for logging purposes
@@ -23,7 +23,7 @@ declare -r ProcID="$(echo $$)"
 declare -r ScriptName="ScriptName"
     # ^ Script name for logging purposes
 
-declare -r CurrentUser="$(id -un)"
+declare -r CurrentUser="$( /usr/bin/id -un )"
 
 declare -r ScriptMaxLogLevel="debug"
     # ^ Max log level lines that will be logged (case insensitive)
@@ -48,8 +48,8 @@ declare -r OriginalIFS="${IFS}"
 
 
 . /usr/local/lib/rhinolib.sh || {
-    echo "Cannot source:  /usr/local/lib/rhinolib.sh . Aborting!"
-    logger -t "${SyslogProgName}" "Cannot source:  /usr/local/lib/rhinolib.sh . Aborting!"
+    echo "CRITICAL - Cannot source:  /usr/local/lib/rhinolib.sh  . Aborting!"
+    logger -t "${SyslogProgName}" "CRITICAL - Cannot source:  /usr/local/lib/rhinolib.sh  . Aborting!"
     exit 150
     }
 
@@ -61,7 +61,7 @@ trap 'ErrorTrap "$LINENO" "$?" "$BASH_COMMAND" "$_" "${BASH_SOURCE[*]}" "${FUNCN
 trap 'ExitScript' EXIT
 
 
-SymLinkResolved="(Symlink resolved: $( readlink --quiet --no-newline $0 )) " || SymLinkResolved=""
+SymLinkResolved="(Symlink resolved: $( /bin/readlink --quiet --no-newline $0 )) " || SymLinkResolved=""
 LogWrite info "${ScriptVersion}"
 LogWrite info "Invoked commandline: $0 $* ${SymLinkResolved}, from directory: ${PWD:-unknown} , by user: $UID: ${CurrentUser:-unknown} , ProcID: ${ProcID} , PPID: ${PPID:-unknown} , Script max log level: ${ScriptMaxLogLevel}"
 LogWrite info "Fields explained: PID: Script PID , MN: Module (script) Name , FN: Function Name , LI: LIne number"
