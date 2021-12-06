@@ -1,10 +1,11 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.14
-# Date:         2021-11-12
+# Version:      1.6.15
+# Date:         2021-12-03
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3.
+
 
 # Prerequisites:
 #
@@ -26,23 +27,23 @@ declare -r IndentString="    ...."
     #   good enough using a hardcoded string.
 declare -r MaxLogLineLength=700
     # ^ Wrap lines longer than this. It's a good idea to keep this a sensible
-    #   length. 700 is a good value.
+    #       length. 700 is a good value.
     #   In LM19.3 syslog truncates at about 1000 chars.
-    #   Note - please use a length 40 chars LESS than what you actually want
-    #   because we're prepending/appending !!LINEWRAPPED!! to wrapped lines and
-    #   adding the IndentString.
+    #   Note - configure a length 40 chars LESS than what you actually want
+    #       because we're prepending and/or appending !!LINEWRAPPED!! to wrapped lines
+    #       as well as adding the IndentString.
     #   Eg - if you want max 800 then configure 760.
-    #   The reason for this is to avoid doing math in the wrapping code at
-    #   this stage, and compensating for the IndentString.
+    #       The reason for this is to avoid doing math in the wrapping code at
+    #       this stage, and compensating for the IndentString.
     #   Note - this value only applies to the log text, not the syslog-created
-    #   content, nor the additional log data I create inside the (...) - if you
-    #   are calculating total line length, assume an additional 130-150 chars
-    #   for this overhead.
+    #       content, nor the additional log data I create inside the (...) - if you
+    #       are calculating total line length, assume an additional 130-150 chars
+    #       for this overhead.
 declare -r ExpandBSN="yes"
     # ^ LogWrite expands \n in messages to newline in log file
 
 
-#These tests verify that the calling script supplied these vars:
+# These tests verify that the calling script supplied these vars:
 [ "$ProcID" ]               # Should fail due to shopt -s -o nounset
 [ "$ScriptName" ]           # Same.
 [ "$SyslogProgName" ]       # Same.
@@ -488,8 +489,11 @@ function DoYouWantToProceed {
 
 function BackupFile {
 
-    #   $1 = Source file
-    #   $2 = Dest dir
+    #   NOTE - This function is here for backwards compatability. New code should
+    #       use function:  BackupFileV2  which is more advanced and future proof.
+    #
+    #   $1 = Source file - mandatory arg
+    #   $2 = Dest dir - mandatory arg
     #
     #   Backs up source:  $1  to destination:  DIRECTORY $2
     #       and creates Dest Dir if it does not exist.
@@ -534,6 +538,127 @@ function BackupFile {
         return 0
         } || {
         LogWrite warning "Error copying:  ${1}  to:  ${TargetName}"
+        return 1
+        }
+}
+
+
+function BackupFileV2 {
+
+    #   Format:  BackupFileV2 -s <sourcefile> -d <destdir> [-t "tag with space"]
+    #       -s <source_file> / --source=<source_file>
+    #           Source file to backup - mandatory field
+    #       -d <dest_dir> / --dir=<dest_dir>
+    #           Destination dir to place the backup file into - mandatory field
+    #       -t <tag_text> / --tag=<tag_text>
+    #           Tag text to append to end of file name - optional field
+    #
+    #   Note - if you're supplying variables with spaces - put them in double quotes.
+    #       Try to use tag_text without spaces (underscore and minus are ok)
+    #       to make file management easier for you.
+    #
+    #   Backs up source:  <sourcefile>  to destination dir:  <destdir>
+    #       and creates destdir if it does not exist.
+    #   Returns exit code == 0 if all successful else exit code == 1
+    #   This function is designed to backup a single source file, do not supply wildcards!
+    #
+    #   Usage:
+    #       BackupFileV2 -s sourcefile -d destdir -t "tag with space" || LogWrite warning "backup failed"
+    #       BackupFileV2 -s "source file with spaces" -d destdir || LogWrite warning "backup failed"
+    #       BackupFileV2 -s sourcefile -d destdir -t filename_without_spaces || LogWrite warning "backup failed"
+    #
+    #       Note - Always include the || or && at the end of the backup command to catch events that fail
+    #           otherwise a failed backup could crash your script as a failed command.
+    #
+    #       Resulting backup file looks like:  OriginalFilename_2021-12-03_083245_TagText
+
+    LogWrite debug "Function BackupFileV2 called with args:  $*"
+
+    local RhinoLibShortOptions="s:d:t:"
+    local RhinoLibLongOptions="dir:source:tag:"
+    local SourceFilename=""
+    local DestDir=""
+    local TagText=""
+
+    CheckIfEnhancedGetopt && \
+        {
+        LogWrite debug "Enhanced getopt command found - script will continue..."
+        } || {
+        ExitScript error 150 "This command requires the enhanced getopt command and will not continue without it"
+        }
+
+    local RhinoLibParsedArgs="$( /bin/getopt --alternative --name=${ScriptName} \
+        --options "${RhinoLibShortOptions}" \
+        --longoptions "${RhinoLibLongOptions}" \
+        -- "$@" )" || \
+            {
+            ExitScript error 150 "Invalid arg supplied to function BackupFileV2 . Exiting"
+            }
+
+    LogWrite debug "RhinoLibParsedArgs (from calling getopt) == ${RhinoLibParsedArgs}"
+    eval set -- ${RhinoLibParsedArgs}
+    LogWrite debug "After eval set, args are:  ${*}"
+
+    while :
+        do
+        case "${1}" in
+            -s | --source)
+                SourceFilename="${2}"
+                shift 2
+                LogWrite debug "Source arg supplied: SourceFilename == ${SourceFilename}";;
+
+            -d | --dir)
+                DestDir="${2}"
+                shift 2
+                LogWrite debug "Dir arg supplied: DestDir == ${DestDir}";;
+
+            -t | --tag)
+                TagText="${2}"
+                shift 2
+                LogWrite debug "Tag arg supplied: TagText == ${TagText}";;
+
+            --)
+                LogWrite debug "End of arguments reached"
+                shift
+                break;;
+
+            *)
+                ExitScript error 150 "Unexpected option:  ${1}";;
+
+        esac
+        done
+
+    [[ -f "${SourceFilename}" ]] || \
+        {
+        LogWrite warning "Cannot find source file:  ${SourceFilename}"
+        return 1
+        }
+
+    mkdir --parents "${DestDir}" || \
+        {
+        LogWrite warning "Error creating directory:  ${DestDir}"
+        return 1
+        }
+
+    local BaseFileName="$( /bin/basename "${SourceFilename}" )"
+    local TimeStamp="$(date +%Y-%m-%d_%H%M%S)"
+    local TargetName="${DestDir%%/}/${BaseFileName}_${TimeStamp}"
+    # ^ Note - $DestDir might come with a trailing slash and since we specify it manually
+    #       in the copy command, we need to remove it from $DestDir with %%/   .
+    [[ "${TagText}" ]] && \
+        {
+        TargetName="${TargetName}_${TagText}"
+        }
+    LogWrite debug "Source file == \"${SourceFilename}\" , Target dir == \"${DestDir}\" , BaseFileName (source file basename) == \"${BaseFileName}\" , TimeStamp == ${TimeStamp} , TargetName == \"${TargetName}\""
+
+    #   Note - I'm using:  "/bin/cp --archive"  because I want to preserve the attributes -
+    #       especially the selinux context :
+    /bin/cp --archive "${SourceFilename}" "${TargetName}" && \
+        {
+        LogWrite info "Successfully copied:  ${SourceFilename}  to:  ${TargetName}"
+        return 0
+        } || {
+        LogWrite warning "Error copying:  ${SourceFilename}  to:  ${TargetName}"
         return 1
         }
 }
