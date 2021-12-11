@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.15
-# Date:         2021-12-03
+# Version:      1.6.16
+# Date:         2021-12-11
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3.
@@ -669,7 +669,7 @@ function LogNftRules {
     # ^ Supply some identifying text within the "..." so that you can find it in the logs
 
     LogWrite info "NFT OUTPUT LOGGING STARTS BELOW FOR: ${1}"
-    local NftRules="$(sudo /usr/sbin/nft list ruleset -nn --handle 2>&1)"
+    local NftRules="$(sudo /usr/sbin/nft -nn --handle list ruleset 2>&1)"
         # ^ May need to check if the script's user can sudo, else I need
         #   to log it with an error and return 1
     LogWrite info "${NftRules}"
