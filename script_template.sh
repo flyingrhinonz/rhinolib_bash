@@ -1,5 +1,13 @@
 #!/bin/bash
 
+# Name:         script_template.sh
+# Description:  Script template for use with rhinolib
+# Version:      1.0.19
+# Date:         2022-03-25
+# By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
+# Github:       https://github.com/flyingrhinonz/rhinolib_bash
+# License:      GPLv3
+
 # This script originates from the master script file that comes with rhinolib.
 # Edit and reuse this script to take advantage of rhinolib functions.
 # For details refer to github:  https://github.com/flyingrhinonz/rhinolib_bash .
@@ -13,7 +21,7 @@ set -o errexit      # Exit when a command fails
 set -o pipefail     # Capture and crash when pipes failed anywhere in the pipe
 
 
-declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.17 , 2021-11-12 , by YOUR NAME ( YOUR EMAIL )"
+declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.0 , 2022-03-03 , by YOUR NAME ( YOUR EMAIL )"
 
 declare -r ProcID="$(echo $$)"
     # ^ Script process ID for logging purposes
@@ -101,8 +109,9 @@ LogWrite debug "Information for advanced engineers/developers to interpret"
 # Note - the ERRORTEXT is given in this case!
 
 
-ExitScript info 0 "Script completed successfully"
+ExitScript -t info 0 "Script completed successfully"
     # ^ Successful exits are info/debug and code 0
+    #       The optional:  -t  echoes the line to stdout too.
 
 ExitScript error 150 "Script exited with an error"
     # ^ Failed exits are critical/error/warning and code != 0

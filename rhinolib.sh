@@ -4,7 +4,7 @@
 # Date:         2021-12-11
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
-# License:      GPLv3.
+# License:      GPLv3
 
 
 # Prerequisites:
