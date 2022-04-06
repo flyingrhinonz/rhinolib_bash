@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.16
-# Date:         2021-12-11
+# Version:      1.6.18
+# Date:         2022-04-06
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3
@@ -709,6 +709,44 @@ function CheckIfEnhancedGetopt {
         } || {
         LogWrite warning "Result == ${Result}  -> Enhanced getopt command not found or error occurred"
         return 1
+        }
+}
+
+
+function DuplicateScriptAction {
+
+    #   Check if duplicate scripts exist with the same file name
+    #       and exit if some are found.
+    #       This is to ensure that only n copies of your script are running.
+    #
+    #   $1 == Max number of concurrent scripts to accept before exiting.
+    #           Should be any value >= 1
+    #   $2 == Action to take if this value is exceeded. Supported actions:
+    #           teeexit == exit the script with a warning log message + terminal message.
+    #           quietexit == exit the script with only a log message.
+    #
+    #   Example:  DuplicateScriptAction 3 teeexit
+    #       Allow maximum 3 concurrent scripts and  echo message + log message + exit  if your script is number 4.
+
+    local ScriptFileName="${0##*/}"
+    local -a ProcArray=( $( pgrep -f -d " " "${ScriptFileName}" ) )
+    local MaxAllowed=$1
+    local ActionToTake=$2
+
+    LogWrite debug "Function DuplicateScriptAction called with args: MaxAllowed == ${MaxAllowed} , ActionToTake == ${ActionToTake} . ScriptFileName == ${ScriptFileName} , Concurrent PIDs: ${ProcArray[*]} , Concurrent PIDs count == ${#ProcArray[*]}"
+
+    (( ${#ProcArray[*]} > ${MaxAllowed} )) && \
+        {
+        [[ "${ActionToTake}" == "quietexit" ]] && \
+            {
+            ExitScript warning 150 "Too many concurrent scripts named: ${ScriptFileName} found . Max concurrent allowed == ${MaxAllowed} . Concurrent PIDs found: ${ProcArray[*]} , Concurrent PIDs count == ${#ProcArray[*]} . Exiting"
+            }
+        [[ "${ActionToTake}" == "teeexit" ]] && \
+            {
+            ExitScript -t warning 150 "Too many concurrent scripts named: ${ScriptFileName} found . Max concurrent allowed == ${MaxAllowed} . Concurrent PIDs found: ${ProcArray[*]} , Concurrent PIDs count == ${#ProcArray[*]} . Exiting"
+            }
+        } || {
+        :
         }
 }
 
