@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.18
-# Date:         2022-04-06
+# Version:      1.6.19
+# Date:         2022-04-07
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3
@@ -345,7 +345,8 @@ function ExitScript {
 
     (( $ExitCode !=0 )) && \
         {
-        LogWrite error "Exit code not zero, writing message to FailureTrapFile..."
+        :   # Required when there is no code in the braces
+        #LogWrite error "Exit code not zero, writing message to FailureTrapFile..."
         #WriteErrorFile "Exit code not zero"
             # ^ Ken disabled this on 2021-08-09 because sometimes we intentionally want to exit
             #       non-zero from our script and that's not necessarily an error - therefore
@@ -724,29 +725,86 @@ function DuplicateScriptAction {
     #   $2 == Action to take if this value is exceeded. Supported actions:
     #           teeexit == exit the script with a warning log message + terminal message.
     #           quietexit == exit the script with only a log message.
+    #   $3 == Information collection to assist debugging. Supported actions:
+    #           none == don't help at all (usually for scripts that constantly run duplicates
+    #               and you know that dupes happen all the time).
+    #           minimallog == use LogWrite to log the related ps lines.
+    #           psfile == minimallog + write full ps output to /tmp/ps-auxfww_<timestamp>
+    #           debuglog == LogWrite full ps output (basically psfile content written to log instead)
     #
-    #   Example:  DuplicateScriptAction 3 teeexit
-    #       Allow maximum 3 concurrent scripts and  echo message + log message + exit  if your script is number 4.
+    #   Example:  DuplicateScriptAction 3 teeexit psfile
+    #               - Allow maximum 3 concurrent scripts
+    #               - Echo message + log message + exit if your script is number 4.
+    #               - Before exiting write a full ps output to file + short log.
+
+    LogWrite debug "Function DuplicateScriptAction started"
 
     local ScriptFileName="${0##*/}"
-    local -a ProcArray=( $( pgrep -f -d " " "${ScriptFileName}" ) )
     local MaxAllowed=$1
     local ActionToTake=$2
+    local DebugAction=$3
 
-    LogWrite debug "Function DuplicateScriptAction called with args: MaxAllowed == ${MaxAllowed} , ActionToTake == ${ActionToTake} . ScriptFileName == ${ScriptFileName} , Concurrent PIDs: ${ProcArray[*]} , Concurrent PIDs count == ${#ProcArray[*]}"
+    local -a PidofProcArray=( $( /usr/sbin/pidof -x "${ScriptFileName}" -o %PPID || : ) )
+    local -a PgrepProcArray=( $( /usr/bin/pgrep -f -d " " "${ScriptFileName}" ) )
+        # ^ This array is used for debugging info only + script development.
+        #       Use it for your own information and to assist you with further data - you can
+        #       compare its info to:  PidofProcArray  but we are not using its
+        #       contents for any kind of decision making because it includes the PPID
+        #       if the text contained in:  ${ScriptFileName}  appears in the parent's args.
+        #       If this happens - the count of:  PgrepProcArray  will be higher than that
+        #       of:  PidofProcArray .
+        #       You'd normally get this condition when your script is run by a cron job
+        #       or some other caller in which case you'll get more PIDs than actual running script copies.
+        #       If you run your script from the command line you won't see this happen.
 
-    (( ${#ProcArray[*]} > ${MaxAllowed} )) && \
+    LogWrite debug "Various args: MaxAllowed == ${MaxAllowed} , ActionToTake == ${ActionToTake} , DebugAction == ${DebugAction} . ScriptFileName == ${ScriptFileName} , PidofProcArray == ${PidofProcArray[*]} , PidofProcArray count == ${#PidofProcArray[*]}"
+    LogWrite debug "Helpful vars (for comparison only - not used by script): PgrepProcArray == ${PgrepProcArray[*]} , PgrepProcArray count == ${#PgrepProcArray[*]}"
+
+    (( ${#PidofProcArray[*]} > ${MaxAllowed} )) && \
         {
+
+        # Information collection:
+
+        LogWrite warning "Duplicate script action triggered. Here is some helpful information before exiting:"
+
+        [[ "${DebugAction}" == "none" ]] && \
+            {
+            LogWrite info "DebugAction == ${DebugAction} . No information will be collected."
+            }
+
+        [[ "${DebugAction}" == "minimallog" ]] && \
+            {
+            LogWrite info "Related lines from:  ps auxww  follow:\n$( /usr/bin/ps auxww | /usr/bin/grep "${ScriptFileName}" || : )"
+            }
+
+        [[ "${DebugAction}" == "psfile" ]] && \
+            {
+            /usr/bin/ps auxfww > /tmp/ps-auxfww_"$(date +%Y-%m-%d_%H%M%S)"
+            LogWrite info "Related lines from:  ps auxww  follow:\n$( /usr/bin/ps auxww | /usr/bin/grep "${ScriptFileName}" || : )"
+            LogWrite info "Full:  ps auxfww  can be found in:  /tmp/ps-auxfww_*"
+            }
+
+        [[ "${DebugAction}" == "debuglog" ]] && \
+            {
+            LogWrite info "Full output of:  ps auxfww  follows:\n$( /usr/bin/ps auxfww || : )"
+            }
+
+        # Exit strategies:
+
         [[ "${ActionToTake}" == "quietexit" ]] && \
             {
-            ExitScript warning 150 "Too many concurrent scripts named: ${ScriptFileName} found . Max concurrent allowed == ${MaxAllowed} . Concurrent PIDs found: ${ProcArray[*]} , Concurrent PIDs count == ${#ProcArray[*]} . Exiting"
+            ExitScript warning 150 "Too many concurrent scripts named:  ${ScriptFileName}  found . Max concurrent allowed == ${MaxAllowed} . Concurrent PIDs found: ${PidofProcArray[*]} , Concurrent PIDs count == ${#PidofProcArray[*]} . Exiting"
             }
+
         [[ "${ActionToTake}" == "teeexit" ]] && \
             {
-            ExitScript -t warning 150 "Too many concurrent scripts named: ${ScriptFileName} found . Max concurrent allowed == ${MaxAllowed} . Concurrent PIDs found: ${ProcArray[*]} , Concurrent PIDs count == ${#ProcArray[*]} . Exiting"
+            ExitScript -t warning 150 "Too many concurrent scripts named:  ${ScriptFileName}  found . Max concurrent allowed == ${MaxAllowed} . Concurrent PIDs found: ${PidofProcArray[*]} , Concurrent PIDs count == ${#PidofProcArray[*]} . Exiting"
             }
+
         } || {
-        :
+
+        LogWrite debug "Function DuplicateScriptAction ended. Not enough duplicates found to trigger script exit. Returning control to the script..."
+
         }
 }
 

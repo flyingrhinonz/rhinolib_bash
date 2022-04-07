@@ -1,6 +1,6 @@
 # rhinolib bash library
 
-Copyright (C) 2021 Kenneth Aaron.
+Copyright (C) 2021-2022 Kenneth Aaron.
 
 flyingrhino AT orcon DOT net DOT nz
 
@@ -33,6 +33,8 @@ The star of the show here is:   **LogWrite**  function that provides proper logg
 - Logging at different log levels so you can easily switch from development to production by simply reducing the log level in your calling script.
 
 Captures crashes in your script and logs debugging information - making troubleshooting your scripts much easier.
+
+Various other useful functions.
 
 Enjoy...
 
