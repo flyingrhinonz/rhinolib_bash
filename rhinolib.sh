@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.19
-# Date:         2022-04-07
+# Version:      1.6.20
+# Date:         2022-05-14
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3
@@ -48,19 +48,6 @@ declare -r ExpandBSN="yes"
 [ "$ScriptName" ]           # Same.
 [ "$SyslogProgName" ]       # Same.
 [ "$ScriptMaxLogLevel" ]    # Same.
-
-# The following test will check for ScriptMaxLogLevel validity or crash your script:
-#[[  ${ScriptMaxLogLevel^^} == "NONE" || \
-#    ${ScriptMaxLogLevel^^} == "CRITICAL" || \
-#    ${ScriptMaxLogLevel^^} == "ERROR" || \
-#    ${ScriptMaxLogLevel^^} == "WARNING" || \
-#    ${ScriptMaxLogLevel^^} == "INFO" || \
-#    ${ScriptMaxLogLevel^^} == "DEBUG" ]] || ScriptMaxLogLevel="ScriptWillCrashNow"
-#        # ^ This tests that your script is configured with one of the supported
-#        #       log levels otherwise it will fail due to setting a readonly variable.
-    # ^ I've commented out these lines because I prefer that if you supply an
-    #       incorrect value your script will continue to work in  DEBUG  level logging
-    #       rather than crash.
 
 
 function LogWrite {
@@ -130,32 +117,38 @@ function LogWrite {
     # log level of the log line. Kind of dirty way of doing it but bash doesn't supply
     # search in array, and regex search is clumsy.
 
-    [[ "${ScriptMaxLogLevel^^}" == "NONE" ]] && return
+    if [[ "${ScriptMaxLogLevel^^}" == "NONE" ]]; then
+        return
         # ^ Script requested no logging
+    fi
 
-    [[ "${ScriptMaxLogLevel^^}" == "CRITICAL" && "${CallingLineLogLevel}" != "CRITICAL" ]] && return
+    if [[ "${ScriptMaxLogLevel^^}" == "CRITICAL" && "${CallingLineLogLevel}" != "CRITICAL" ]]; then
+        return
         # ^ Only CRITICAL level logging
+    fi
 
-    [[ "${ScriptMaxLogLevel^^}" == "ERROR" ]] && \
-        {
+    if [[ "${ScriptMaxLogLevel^^}" == "ERROR" ]]; then
         case "${CallingLineLogLevel}" in
             WARNING | INFO | DEBUG )    return;;
         esac
-        }
+    fi
         # ^ Only CRITICAL and ERROR level logging
 
-    [[ "${ScriptMaxLogLevel^^}" == "WARNING" ]] && \
-        {
+    if [[ "${ScriptMaxLogLevel^^}" == "WARNING" ]]; then
         case "${CallingLineLogLevel}" in
             INFO | DEBUG )    return;;
         esac
-        }
+    fi
         # ^ Only CRITICAL, ERROR and WARNING level logging
 
-    [[ "${ScriptMaxLogLevel^^}" == "INFO" && "${CallingLineLogLevel}" == "DEBUG" ]] && return
+    if [[ "${ScriptMaxLogLevel^^}" == "INFO" && "${CallingLineLogLevel}" == "DEBUG" ]]; then
+        return
         # ^ Log level INFO means only DEBUG is not allowed
+    fi
 
-    #[[ "${ScriptMaxLogLevel^^}" == "DEBUG" ]] && :
+    #if [[ "${ScriptMaxLogLevel^^}" == "DEBUG" ]]; then
+    #   :
+    #fi
         # ^ Log level DEBUG means everything is allowed
         #   Commenting out this line means it will accept  DEBUG  level or
         #       any invalid text supplied in this variable.
@@ -167,7 +160,9 @@ function LogWrite {
         # ^ Looks like there's no  $2  argument  in your  LogWrite  line, so we'll
         #       force some log text for you, hopefully you'll pick this up in your logging output.
 
-    [[ "${TeeFlag}" == "true" ]] && echo "${LogText}" || :
+    if [[ "${TeeFlag}" == "true" ]]; then
+        echo "${LogText}"
+    fi
         # ^ TeeFlag was set - print the log line to screen too.
         #   No fancy text processing is done on this line - it is printed exactly as supplied.
 
@@ -183,10 +178,9 @@ function LogWrite {
     # Expand messages containing \n to new line:
     # Otherwise a message such as   LogWrite warning "hello\nline"
     # appears as one line with the same literal txt
-    [[ "${ExpandBSN}" == "yes" ]] && \
-        {
+    if [[ "${ExpandBSN}" == "yes" ]]; then
         LogText="${LogText//\\n/$'\n'}"
-        }
+    fi
 
     # Place other text conversions here, before we convert variable LogText
     # into array RecordMsgSplitNL:
@@ -340,8 +334,10 @@ function ExitScript {
     shift || :
     local ExitReason="${*:-"Error (a more specific exit reason was not supplied)"}"
 
-    [[ "${TeeFlag}" == "true" ]] && echo "${ExitReason}" || :
+    if [[ "${TeeFlag}" == "true" ]]; then
+        echo "${ExitReason}"
         # ^ TeeFlag was set - print the log line to screen too.
+    fi
 
     (( $ExitCode !=0 )) && \
         {
@@ -400,7 +396,11 @@ function IsInteger {
     # If multiple statements then use "if/else" rather than && {} and || {}
     # because it leads to trouble and the function may crash
 
-    [[ "${1}" =~ ^-?[0-9]+$ ]] && return 0 || return 1
+    if [[ "${1}" =~ ^-?[0-9]+$ ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 
@@ -408,7 +408,11 @@ function IsAlnum {
     # Requires bash v3 or greater
     # Use: IsAlnum "${var}" && echo "pass" || echo "fail"
 
-    [[ "${1}" =~ ^[0-9a-zA-Z]+$ ]] && return 0 || return 1
+    if [[ "${1}" =~ ^[0-9a-zA-Z]+$ ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 
@@ -416,7 +420,11 @@ function IsAlnum1 {
     # Requires bash v3 or greater
     # Accept also "-" and "_"
 
-    [[ "${1}" =~ ^[0-9a-zA-Z_-]+$ ]] && return 0 || return 1
+    if [[ "${1}" =~ ^[0-9a-zA-Z_-]+$ ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 
@@ -424,7 +432,11 @@ function IsAlnum2 {
     # Requires bash v3 or greater
     # Accept also "-" , "_" , " "
 
-    [[ "${1}" =~ ^[0-9a-zA-Z\ _-]+$ ]] && return 0 || return 1
+    if [[ "${1}" =~ ^[0-9a-zA-Z\ _-]+$ ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 
@@ -442,9 +454,10 @@ function CatToFile {
         return 1
         }
 
-    if [[ -f "$1" ]] && [[ -s "$1" ]]   # Regular file non-zero size
-        then
-        [[ "$( /bin/tail -c 1 $1 )" != "" ]] && echo >> "$1" || :
+    if [[ -f "$1" ]] && [[ -s "$1" ]]; then   # Regular file non-zero size
+        if [[ "$( /bin/tail -c 1 $1 )" != "" ]]; then
+            echo >> "$1"
+        fi
             # ^ Line doesn't end in:  \n  so append an empty line to the end of the file.
             #   Another way of doing it is:  /bin/tail -c 1 testfile | hexdump | cut -d " " -f 2 | head -n 1
     fi
@@ -484,7 +497,11 @@ function DoYouWantToProceed {
 
     local Ans
     read -p  "--> Do you want to proceed? y/n  " Ans || :
-    [[ ( "${Ans}" == "y" ) || ( "${Ans}" == "Y" ) ]] && return 0 || return 1
+    if [[ ( "${Ans}" == "y" ) || ( "${Ans}" == "Y" ) ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 
@@ -512,11 +529,12 @@ function BackupFile {
         return 1
         }
 
-    [[ -f "${1}" ]] || \
-        {
+    if [[ -f "${1}" ]]; then
+        :
+    else
         LogWrite warning "Cannot find source file:  ${1}"
         return 1
-        }
+    fi
 
     mkdir --parents "${2}" || \
         {
@@ -629,11 +647,12 @@ function BackupFileV2 {
         esac
         done
 
-    [[ -f "${SourceFilename}" ]] || \
-        {
+    if [[ -f "${SourceFilename}" ]]; then
+        :
+    else:
         LogWrite warning "Cannot find source file:  ${SourceFilename}"
         return 1
-        }
+    fi
 
     mkdir --parents "${DestDir}" || \
         {
@@ -646,10 +665,11 @@ function BackupFileV2 {
     local TargetName="${DestDir%%/}/${BaseFileName}_${TimeStamp}"
     # ^ Note - $DestDir might come with a trailing slash and since we specify it manually
     #       in the copy command, we need to remove it from $DestDir with %%/   .
-    [[ "${TagText}" ]] && \
-        {
+
+    if [[ "${TagText}" ]]; then
         TargetName="${TargetName}_${TagText}"
-        }
+    fi
+
     LogWrite debug "Source file == \"${SourceFilename}\" , Target dir == \"${DestDir}\" , BaseFileName (source file basename) == \"${BaseFileName}\" , TimeStamp == ${TimeStamp} , TargetName == \"${TargetName}\""
 
     #   Note - I'm using:  "/bin/cp --archive"  because I want to preserve the attributes -
@@ -694,7 +714,11 @@ function CheckIfSelinuxPresent {
     local Result="$( /sbin/getenforce 2>&1 || : )"
     Result="${Result,,}"    # Lowercase it
     LogWrite debug "Checking:  /sbin/getenforce  -->  Result == ${Result}"
-    [[ "${Result}" =~ (permissive|enforcing) ]] && return 0 || return 1
+    if [[ "${Result}" =~ (permissive|enforcing) ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 
@@ -767,39 +791,33 @@ function DuplicateScriptAction {
 
         LogWrite warning "Duplicate script action triggered. Here is some helpful information before exiting:"
 
-        [[ "${DebugAction}" == "none" ]] && \
-            {
+        if [[ "${DebugAction}" == "none" ]]; then
             LogWrite info "DebugAction == ${DebugAction} . No information will be collected."
-            }
+        fi
 
-        [[ "${DebugAction}" == "minimallog" ]] && \
-            {
+        if [[ "${DebugAction}" == "minimallog" ]]; then
             LogWrite info "Related lines from:  ps auxww  follow:\n$( /usr/bin/ps auxww | /usr/bin/grep "${ScriptFileName}" || : )"
-            }
+        fi
 
-        [[ "${DebugAction}" == "psfile" ]] && \
-            {
+        if [[ "${DebugAction}" == "psfile" ]]; then
             /usr/bin/ps auxfww > /tmp/ps-auxfww_"$(date +%Y-%m-%d_%H%M%S)"
             LogWrite info "Related lines from:  ps auxww  follow:\n$( /usr/bin/ps auxww | /usr/bin/grep "${ScriptFileName}" || : )"
             LogWrite info "Full:  ps auxfww  can be found in:  /tmp/ps-auxfww_*"
-            }
+        fi
 
-        [[ "${DebugAction}" == "debuglog" ]] && \
-            {
+        if [[ "${DebugAction}" == "debuglog" ]]; then
             LogWrite info "Full output of:  ps auxfww  follows:\n$( /usr/bin/ps auxfww || : )"
-            }
+        fi
 
         # Exit strategies:
 
-        [[ "${ActionToTake}" == "quietexit" ]] && \
-            {
+        if [[ "${ActionToTake}" == "quietexit" ]]; then
             ExitScript warning 150 "Too many concurrent scripts named:  ${ScriptFileName}  found . Max concurrent allowed == ${MaxAllowed} . Concurrent PIDs found: ${PidofProcArray[*]} , Concurrent PIDs count == ${#PidofProcArray[*]} . Exiting"
-            }
+        fi
 
-        [[ "${ActionToTake}" == "teeexit" ]] && \
-            {
+        if [[ "${ActionToTake}" == "teeexit" ]]; then
             ExitScript -t warning 150 "Too many concurrent scripts named:  ${ScriptFileName}  found . Max concurrent allowed == ${MaxAllowed} . Concurrent PIDs found: ${PidofProcArray[*]} , Concurrent PIDs count == ${#PidofProcArray[*]} . Exiting"
-            }
+        fi
 
         } || {
 
