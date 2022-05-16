@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.20
-# Date:         2022-05-14
+# Version:      1.6.21
+# Date:         2022-05-17
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3
@@ -76,7 +76,7 @@ function LogWrite {
         # ^ If flag is set then echo the message too.
 
     # Special flags can be supplied to LogWrite. Check if any are present:
-    (( $# > 0 )) && \
+    if (( $# > 0 )); then
         case "${1}" in
             "-t")   TeeFlag="true"
                         # ^ Set the:  TeeFlag  so that we can print the line to screen too
@@ -85,6 +85,7 @@ function LogWrite {
                         #       it is called with $1 (log level) and $2 (log message).
             *)      :;;
         esac
+    fi
 
     local CallingLineLogLevel=${1:-ERROR}
         # ^ Holds the log level (ERROR, INFO, etc) of the calling log line.
@@ -196,16 +197,12 @@ function LogWrite {
     # Split RecordMsgSplitNL lines if they exceed MaxLogLineLength length
     # otherwise pass them through without splitting.
     # Store results in SplitLinesMessage:
-    for LineLooper in "${RecordMsgSplitNL[@]}"
-        do
-        (( ${#LineLooper} < ${MaxLogLineLength} )) && \
-            {
-
+    for LineLooper in "${RecordMsgSplitNL[@]}"; do
+        if (( ${#LineLooper} < ${MaxLogLineLength} )); then
             # Normal line length detected:
             SplitLinesMessage+=("${LineLooper}")
 
-            } || {
-
+        else
             # Long line detected, need to split:
             local FullLineLength=${#LineLooper}
 
@@ -215,47 +212,44 @@ function LogWrite {
                 #   if there is a remainder which means the number of splits
                 #   increments by 1.
 
-            (( (${FullLineLength} % ${MaxLogLineLength}) > 0 )) && \
-                {
+            if (( (${FullLineLength} % ${MaxLogLineLength}) > 0 )); then
                 (( NumOfSplits++ )) || true
-                }
+            fi
 
             local SLALooper
             for (( SLALooper=0; SLALooper<${NumOfSplits}; SLALooper++ ))
                 do
                 local -i StartIndex=$(( SLALooper * ${MaxLogLineLength} ))
-                (( ${SLALooper} == 0 )) && \
-                    {
+                if (( ${SLALooper} == 0 )); then
                     SplitLinesMessage+=("${LineLooper:${StartIndex}:${MaxLogLineLength}}!!LINEWRAPPED!!")
                         # ^ First split, append !!LINEWRAPPED!! at the end
-                    }
+                fi
 
-                (( (${SLALooper} > 0) && (${SLALooper} < (NumOfSplits-1)) )) && \
-                    {
+                if (( (${SLALooper} > 0) && (${SLALooper} < (NumOfSplits-1)) )); then
                     SplitLinesMessage+=("!!LINEWRAPPED!!${LineLooper:${StartIndex}:${MaxLogLineLength}}!!LINEWRAPPED!!")
                         # ^ Middle split, prepend and append !!LINEWRAPPED!! at both ends
-                    }
+                fi
 
-                (( ${SLALooper} == (NumOfSplits-1) )) && \
-                    {
+                if (( ${SLALooper} == (NumOfSplits-1) )); then
                     SplitLinesMessage+=("!!LINEWRAPPED!!${LineLooper:${StartIndex}:${MaxLogLineLength}}")
                         # ^ Last split, prepend !!LINEWRAPPED!! at the start
-                    }
+                fi
                 done
 
-            }
-        done
+        fi
+    done
 
     # Prepend the "    ...." IndentString to all lines except the first.
     # ( This includes wrapped lines already prepended with !!LINEWRAPPED!! ) :
     local -i Counter=0
     for LineLooper in "${SplitLinesMessage[@]}"
         do
-        (( $Counter > 0 )) && \
-            {
+
+        if (( $Counter > 0 )); then
             local TempString="${IndentString}${LineLooper}"
             SplitLinesMessage[$Counter]="${TempString}"
-            }
+        fi
+
         (( Counter++ )) || true
             # ^ Need the || true else it crashes
         done
@@ -318,7 +312,7 @@ function ExitScript {
         # ^ If flag is set then echo the message too.
 
     # Special flags can be supplied to ExitScript. Check if any are present:
-    (( $# > 0 )) && \
+    if (( $# > 0 )); then
         case "${1}" in
             "-t")   TeeFlag="true"
                         # ^ Set the:  TeeFlag  so that we can print the line to screen too.
@@ -327,6 +321,7 @@ function ExitScript {
                         #       it is called with $1, $2, $3 args.
             *)      :;;
         esac
+    fi
 
     local LogLevel="${1:-"error"}"
     shift || :
@@ -339,8 +334,7 @@ function ExitScript {
         # ^ TeeFlag was set - print the log line to screen too.
     fi
 
-    (( $ExitCode !=0 )) && \
-        {
+    if (( $ExitCode !=0 )); then
         :   # Required when there is no code in the braces
         #LogWrite error "Exit code not zero, writing message to FailureTrapFile..."
         #WriteErrorFile "Exit code not zero"
@@ -348,7 +342,7 @@ function ExitScript {
             #       non-zero from our script and that's not necessarily an error - therefore
             #       in this case if the developer wants to write a line to the error file - it
             #       must be done explicilty via a call to function:  WriteErrorFile .
-        }
+    fi
 
     trap '' EXIT
         # ^ Stop the exit error trap because we really want to exit here!
@@ -448,11 +442,10 @@ function CatToFile {
     #           not using shift;$* to ease debugging of quoting problems.
     #   This function returns exit code 1 if it can't complete the request successfully.
 
-    [ -d "$1" ] && \
-        {
+    if [ -d "$1" ]; then
         LogWrite error "$1 is a directory"
         return 1
-        }
+    fi
 
     if [[ -f "$1" ]] && [[ -s "$1" ]]; then   # Regular file non-zero size
         if [[ "$( /bin/tail -c 1 $1 )" != "" ]]; then
@@ -461,11 +454,13 @@ function CatToFile {
             # ^ Line doesn't end in:  \n  so append an empty line to the end of the file.
             #   Another way of doing it is:  /bin/tail -c 1 testfile | hexdump | cut -d " " -f 2 | head -n 1
     fi
-    echo "$2" >> "$1" || \
-        {
+
+    if echo "$2" >> "$1"; then
+        :
+    else
         LogWrite error "Unknown error writing to file $1"
         return 1
-        }
+    fi
 }
 
 
@@ -523,11 +518,10 @@ function BackupFile {
     #       otherwise a failed backup could crash your script as a failed command.
 
     LogWrite debug "BackupFile called with args:  $*"
-    (( $# != 2 )) && \
-        {
+    if (( $# != 2 )); then
         LogWrite warning "Incorrect number of arguments. Expecting 2"
         return 1
-        }
+    fi
 
     if [[ -f "${1}" ]]; then
         :
@@ -536,11 +530,12 @@ function BackupFile {
         return 1
     fi
 
-    mkdir --parents "${2}" || \
-        {
+    if mkdir --parents "${2}"; then
+        :
+    else
         LogWrite warning "Error creating directory:  ${2}"
         return 1
-        }
+    fi
 
     local FileName="$( /bin/basename "${1}" )"
     local TimeStamp="$(date +%Y-%m-%d_%H%M%S)"
@@ -551,14 +546,13 @@ function BackupFile {
     #       in the copy command, we need to remove it from $2 with %%/   .
     #   Note - I'm using:  "/bin/cp --archive"  because I want to preserve the attributes -
     #       especially the selinux context.
-    /bin/cp --archive "${1}" "${TargetName}" && \
-        {
+    if /bin/cp --archive "${1}" "${TargetName}"; then
         LogWrite info "Successfully copied:  ${1}  to:  ${TargetName}"
         return 0
-        } || {
+    else
         LogWrite warning "Error copying:  ${1}  to:  ${TargetName}"
         return 1
-        }
+    fi
 }
 
 
@@ -599,12 +593,11 @@ function BackupFileV2 {
     local DestDir=""
     local TagText=""
 
-    CheckIfEnhancedGetopt && \
-        {
+    if CheckIfEnhancedGetopt; then
         LogWrite debug "Enhanced getopt command found - script will continue..."
-        } || {
+    else
         ExitScript error 150 "This command requires the enhanced getopt command and will not continue without it"
-        }
+    fi
 
     local RhinoLibParsedArgs="$( /bin/getopt --alternative --name=${ScriptName} \
         --options "${RhinoLibShortOptions}" \
@@ -654,11 +647,12 @@ function BackupFileV2 {
         return 1
     fi
 
-    mkdir --parents "${DestDir}" || \
-        {
+    if mkdir --parents "${DestDir}"; then
+        :
+    else
         LogWrite warning "Error creating directory:  ${DestDir}"
         return 1
-        }
+    fi
 
     local BaseFileName="$( /bin/basename "${SourceFilename}" )"
     local TimeStamp="$(date +%Y-%m-%d_%H%M%S)"
@@ -674,14 +668,13 @@ function BackupFileV2 {
 
     #   Note - I'm using:  "/bin/cp --archive"  because I want to preserve the attributes -
     #       especially the selinux context :
-    /bin/cp --archive "${SourceFilename}" "${TargetName}" && \
-        {
+    if /bin/cp --archive "${SourceFilename}" "${TargetName}"; then
         LogWrite info "Successfully copied:  ${SourceFilename}  to:  ${TargetName}"
         return 0
-        } || {
+    else
         LogWrite warning "Error copying:  ${SourceFilename}  to:  ${TargetName}"
         return 1
-        }
+    fi
 }
 
 
@@ -727,14 +720,13 @@ function CheckIfEnhancedGetopt {
     #   Enhanced getopt has advantages over the builtin getops and the older getopt command.
 
     local Result="$( /bin/getopt -T &>/dev/null && echo $? || echo $? )"
-    (( ${Result} == 4 )) && \
-        {
+    if (( ${Result} == 4 )); then
         LogWrite debug "Result == ${Result}  -> Enhanced getopt command found"
         return 0
-        } || {
+    else
         LogWrite warning "Result == ${Result}  -> Enhanced getopt command not found or error occurred"
         return 1
-        }
+    fi
 }
 
 
@@ -784,8 +776,7 @@ function DuplicateScriptAction {
     LogWrite debug "Various args: MaxAllowed == ${MaxAllowed} , ActionToTake == ${ActionToTake} , DebugAction == ${DebugAction} . ScriptFileName == ${ScriptFileName} , PidofProcArray == ${PidofProcArray[*]} , PidofProcArray count == ${#PidofProcArray[*]}"
     LogWrite debug "Helpful vars (for comparison only - not used by script): PgrepProcArray == ${PgrepProcArray[*]} , PgrepProcArray count == ${#PgrepProcArray[*]}"
 
-    (( ${#PidofProcArray[*]} > ${MaxAllowed} )) && \
-        {
+    if (( ${#PidofProcArray[*]} > ${MaxAllowed} )); then
 
         # Information collection:
 
@@ -819,11 +810,10 @@ function DuplicateScriptAction {
             ExitScript -t warning 150 "Too many concurrent scripts named:  ${ScriptFileName}  found . Max concurrent allowed == ${MaxAllowed} . Concurrent PIDs found: ${PidofProcArray[*]} , Concurrent PIDs count == ${#PidofProcArray[*]} . Exiting"
         fi
 
-        } || {
-
+    else
         LogWrite debug "Function DuplicateScriptAction ended. Not enough duplicates found to trigger script exit. Returning control to the script..."
 
-        }
+    fi
 }
 
 
