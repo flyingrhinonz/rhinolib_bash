@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.21
-# Date:         2022-05-17
+# Version:      1.6.22
+# Date:         2022-05-18
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3
@@ -642,7 +642,7 @@ function BackupFileV2 {
 
     if [[ -f "${SourceFilename}" ]]; then
         :
-    else:
+    else
         LogWrite warning "Cannot find source file:  ${SourceFilename}"
         return 1
     fi
