@@ -2,8 +2,8 @@
 
 # Name:         script_template.sh
 # Description:  Script template for use with rhinolib
-# Version:      1.0.19
-# Date:         2022-03-25
+# Version:      1.0.21
+# Date:         2022-05-29
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3
@@ -55,11 +55,11 @@ declare -r OriginalIFS="${IFS}"
     # ^ In case we need to change it along the way
 
 
-. /usr/local/lib/rhinolib.sh || {
+if ! . /usr/local/lib/rhinolib.sh; then
     echo "CRITICAL - Cannot source:  /usr/local/lib/rhinolib.sh  . Aborting!"
     logger -t "${SyslogProgName}" "CRITICAL - Cannot source:  /usr/local/lib/rhinolib.sh  . Aborting!"
     exit 150
-    }
+fi
 
 
 # Setup error traps that send debug information to rhinolib for logging:

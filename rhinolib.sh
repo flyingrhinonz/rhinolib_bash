@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.22
-# Date:         2022-05-18
+# Version:      1.6.23
+# Date:         2022-05-29
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3
@@ -162,7 +162,8 @@ function LogWrite {
         #       force some log text for you, hopefully you'll pick this up in your logging output.
 
     if [[ "${TeeFlag}" == "true" ]]; then
-        echo "${LogText}"
+        echo -e "${LogText}"
+            # ^ The:  -e  allows controls in the string such as  \n  to be respected.
     fi
         # ^ TeeFlag was set - print the log line to screen too.
         #   No fancy text processing is done on this line - it is printed exactly as supplied.
@@ -330,8 +331,9 @@ function ExitScript {
     local ExitReason="${*:-"Error (a more specific exit reason was not supplied)"}"
 
     if [[ "${TeeFlag}" == "true" ]]; then
-        echo "${ExitReason}"
+        echo -e "${ExitReason}"
         # ^ TeeFlag was set - print the log line to screen too.
+        #   The:  -e  allows controls in the string such as  \n  to be respected.
     fi
 
     if (( $ExitCode !=0 )); then
@@ -491,7 +493,7 @@ function DoYouWantToProceed {
     # Usage: DoYouWantToProceed && echo "user said yes"
 
     local Ans
-    read -p  "--> Do you want to proceed? y/n  " Ans || :
+    read -p  "--> Do you want to proceed (y/n) ?  " Ans || :
     if [[ ( "${Ans}" == "y" ) || ( "${Ans}" == "Y" ) ]]; then
         return 0
     else
