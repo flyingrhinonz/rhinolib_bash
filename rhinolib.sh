@@ -1,10 +1,10 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.23
-# Date:         2022-05-29
-# By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
-# Github:       https://github.com/flyingrhinonz/rhinolib_bash
+# Version:      1.6.25
+# Date:         2022-11-28
+# Copyright:    Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # License:      GPLv3
+# Github:       https://github.com/flyingrhinonz/rhinolib_bash
 
 
 # Prerequisites:
@@ -41,6 +41,40 @@ declare -r MaxLogLineLength=700
     #       for this overhead.
 declare -r ExpandBSN="yes"
     # ^ LogWrite expands \n in messages to newline in log file
+
+
+# The following are linux commands that may exist in more than one place
+#   therefore we will check for and use their correct path:
+
+# getopt can exist in one of two places.
+# If neither is found the script will crash on unset var which is good:
+if [[ -x "/bin/getopt" ]]; then
+    declare -r RhinoLib_GetoptCmd="/bin/getopt"
+        # ^ RHEL 7/8 , Debian , LM19
+elif [[ -x "/usr/bin/getopt" ]]; then
+    declare -r RhinoLib_GetoptCmd="/usr/bin/getopt"
+        # ^ RHEL 6
+fi
+
+# tail can exist in one of two places.
+# If neither is found the script will crash on unset var which is good:
+if [[ -x "/bin/tail" ]]; then
+    declare -r RhinoLib_TailCmd="/bin/tail"
+        # ^ RHEL 7/8 , Debian , LM19
+elif [[ -x "/usr/bin/tail" ]]; then
+    declare -r RhinoLib_TailCmd="/usr/bin/tail"
+        # ^ RHEL 6
+fi
+
+# logger can exist in one of two places:
+# If neither is found the script will crash on unset var which is good.
+if [[ -x "/bin/logger" ]]; then
+    declare -r RhinoLib_LoggerCmd="/bin/logger"
+        # ^ RHEL 5
+elif [[ -x "/usr/bin/logger" ]]; then
+    declare -r RhinoLib_LoggerCmd="/usr/bin/logger"
+        # ^ RHEL 6/7/8 , Debian , LM19
+fi
 
 
 # These tests verify that the calling script supplied these vars:
@@ -267,7 +301,7 @@ function LogWrite {
 
         # This code is for syslog:
         #LoggerText="<${CallingLineLogLevel}> ($(date +%Y-%m-%d\ %H:%M:%S.%3N) , MN: ${ScriptName} , FN: ${FUNCNAME[1]:-UNKNOWN} , LI: ${BASH_LINENO}):    ${LineLooper}"
-        #logger --id "${ProcID}" --tag "${SyslogProgName}" "${LoggerText}"
+        #"${RhinoLib_LoggerCmd}" --id "${ProcID}" --tag "${SyslogProgName}" "${LoggerText}"
 
         # This code is for systemd / journalctl (but also logs to syslog properly):
         LoggerText="<${CallingLineLogLevel}> (PID: ${ProcID} , MN: ${ScriptName} , FN: ${FUNCNAME[1]:-UNKNOWN} , LI: ${BASH_LINENO}):    ${LineLooper}"
@@ -282,7 +316,7 @@ function LogWrite {
         #   Also journalctl can show proper dates, so I removed the date field. Use this to read the journal:
         #     journalctl -fa -o short-iso -t ProgramName
 
-        /usr/bin/logger -t "${SyslogProgName}" "${LoggerText}"
+        "${RhinoLib_LoggerCmd}" -t "${SyslogProgName}" "${LoggerText}"
         # ^ Don't need the --id for systemd as it's already added into journalctl incorrectly (it logs the PID of 'logger')
         #   and I send it manually inside the (...). See note above.
 
@@ -450,11 +484,11 @@ function CatToFile {
     fi
 
     if [[ -f "$1" ]] && [[ -s "$1" ]]; then   # Regular file non-zero size
-        if [[ "$( /bin/tail -c 1 $1 )" != "" ]]; then
+        if [[ "$( ${RhinoLib_TailCmd} -c 1 $1 )" != "" ]]; then
             echo >> "$1"
         fi
             # ^ Line doesn't end in:  \n  so append an empty line to the end of the file.
-            #   Another way of doing it is:  /bin/tail -c 1 testfile | hexdump | cut -d " " -f 2 | head -n 1
+            #   Another way of doing it is:  ${RhinoLib_TailCmd} -c 1 testfile | hexdump | cut -d " " -f 2 | head -n 1
     fi
 
     if echo "$2" >> "$1"; then
@@ -601,7 +635,7 @@ function BackupFileV2 {
         ExitScript error 150 "This command requires the enhanced getopt command and will not continue without it"
     fi
 
-    local RhinoLibParsedArgs="$( /bin/getopt --alternative --name=${ScriptName} \
+    local RhinoLibParsedArgs="$( "${RhinoLib_GetoptCmd}" --alternative --name=${ScriptName} \
         --options "${RhinoLibShortOptions}" \
         --longoptions "${RhinoLibLongOptions}" \
         -- "$@" )" || \
@@ -681,13 +715,11 @@ function BackupFileV2 {
 
 
 function LogNftRules {
-    # Call with: LogNftRules "After making change x y z"
-    # ^ Supply some identifying text within the "..." so that you can find it in the logs
+    # Usage:    LogNftRules "After making change x y z"
+    #   Supply some identifying text within the "..." so that you can find it in the logs
 
     LogWrite info "NFT OUTPUT LOGGING STARTS BELOW FOR: ${1}"
-    local NftRules="$(sudo /usr/sbin/nft -nn --handle list ruleset 2>&1)"
-        # ^ May need to check if the script's user can sudo, else I need
-        #   to log it with an error and return 1
+    local NftRules="$(sudo /usr/sbin/nft -nn --handle list ruleset 2>&1 || echo "Error running:  sudo /usr/sbin/nft . Do you have sudo permissions?" )"
     LogWrite info "${NftRules}"
     LogWrite info "NFT OUTPUT LOGGING ENDED ABOVE FOR: ${1}"
 }
@@ -721,7 +753,7 @@ function CheckIfEnhancedGetopt {
 
     #   Enhanced getopt has advantages over the builtin getops and the older getopt command.
 
-    local Result="$( /bin/getopt -T &>/dev/null && echo $? || echo $? )"
+    local Result="$( "${RhinoLib_GetoptCmd}" -T &>/dev/null && echo $? || echo $? )"
     if (( ${Result} == 4 )); then
         LogWrite debug "Result == ${Result}  -> Enhanced getopt command found"
         return 0
