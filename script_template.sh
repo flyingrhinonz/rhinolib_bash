@@ -2,8 +2,8 @@
 
 # Name:         script_template.sh
 # Description:  Script template for use with rhinolib
-# Version:      1.0.21
-# Date:         2022-05-29
+# Version:      1.0.22
+# Date:         2023-09-23
 # By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 # License:      GPLv3
@@ -72,7 +72,7 @@ trap 'ExitScript' EXIT
 SymLinkResolved="(Symlink resolved: $( /bin/readlink --quiet --no-newline $0 )) " || SymLinkResolved=""
 LogWrite info "${ScriptVersion}"
 LogWrite info "Invoked commandline: $0 $* ${SymLinkResolved}, from directory: ${PWD:-unknown} , by user: $UID: ${CurrentUser:-unknown} , ProcID: ${ProcID} , PPID: ${PPID:-unknown} , Script max log level: ${ScriptMaxLogLevel}"
-LogWrite info "Fields explained: PID: Script PID , MN: Module (script) Name , FN: Function Name , LI: LIne number"
+LogWrite info "Fields explained: PID == Script PID , MN == Module (script) Name , FN == Function Name , LI == LIne number"
     # ^ The reason we have a PID in here is because journalctl logs the PID of the 'logger' command
     #       (that is used to do the actual logging, and this changes every time a line is logged)
     #       and not the PID of the actual script.
