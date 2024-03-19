@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.25
-# Date:         2022-11-28
+# Version:      1.6.26
+# Date:         2024-03-19
 # Copyright:    Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # License:      GPLv3
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
@@ -513,6 +513,103 @@ function UnderlineText {
         echo -n "${UnderlineChar}"
     done
     echo
+}
+
+
+function ColorText {
+    # Prints text to the screen in color
+    # See codes here:   https://en.wikipedia.org/wiki/ANSI_escape_code
+    #   and here:  https://misc.flogisoft.com/bash/tip_colors_and_formatting
+
+    # Example:
+    #   ColorText StUnderline FgGreen BgBlue "blah"
+    #   ColorText StStandard FgRed BgBlack "test\n"
+    #       Writes one word in one set of colors followed by another word in a different set of colors.
+    #       Then prints a new line.
+    #   Note - you explicitly need to supply:  `\n`  for new line.
+
+    # ANSI color codes explained in detail:
+    #
+    #   Example format:
+    #       echo -e "'\033[0;31m'blah'\033[0m'"         (style & color, without background)
+    #       echo -e "'\033[0;31;46m'blah'\033[0m'"      (style & color, with background)
+    #
+    #   The:  `-e`  flag of the `echo` command allows you to use special characters
+    #       like:  `\n`  (newline) and:  `\t`  (tab) inside of the input string.
+    #
+    #   All ansi escape sequences start with the ESCAPE CHARACTER which can be supplied in various formats.
+    #   We use octal format, but here are all the options:
+    #       Octal:      \033
+    #       Hex:        `\x1B`
+    #       Decimal     27
+    #       Escape char `\e`
+    #
+    #   `\033`
+    #       In our case we're using octal format for the escape char.
+    #   `[`
+    #       The opening bracket (Control Sequence Introducer) is optional,
+    #           but helps separate the command from the escape character.
+    #   `;`
+    #       Used as a separator between the color codes if supplying more than one value
+    #   `<VALUE>`
+    #       Style code (in the first position - this defines attributes like bold, blinking, underline, etc)
+    #       Text color code (in the second position - defines the color of the text foreground)
+    #       Background color code (in the third position - defines the color of the background)
+    #   `m`
+    #       Need to figure out what the:  `m`  at the end does...
+    #
+    #   '\033[0m'
+    #       This sequence removes all attributes (formatting and colors).
+    #       Need to figure out what the:  `m`  at the end does...
+
+    local StyleCode
+    local FGCode
+    local BGCode
+
+    #LogWrite debug "1 == ${1} , 2 == ${2} , 3 == ${3} , 4 == ${4}"
+        # ^ WARNING - logs your text! Use only for debugging this function.
+
+    case "${1}" in
+        "StStandard")       StyleCode="0";;
+        "StBoldbright")     StyleCode="1";;
+        "StDim")            StyleCode="2";;
+        "StItalic")         StyleCode="3";;
+        "StUnderline")      StyleCode="4";;
+        "StBlink")          StyleCode="5";;
+        "StReversed")       StyleCode="7";;
+        "StInvisible")      StyleCode="8";;
+        "StStrikethrough")  StyleCode="9";;
+        *)                  StyleCode="0";;
+    esac
+
+    case "${2}" in
+        "FgBlack")          FGCode="30";;
+        "FgRed")            FGCode="31";;
+        "FgGreen")          FGCode="32";;
+        "FgYellow")         FGCode="33";;
+        "FgBlue")           FGCode="34";;
+        "FgPurple")         FGCode="35";;
+        "FgCyan")           FGCode="36";;
+        "FgGray")           FGCode="37";;
+        *)                  FGCode="30";;
+    esac
+
+    case "${3}" in
+        "BgBlack")          BGCode="40";;
+        "BgRed")            BGCode="41";;
+        "BgGreen")          BGCode="42";;
+        "BgYellow")         BGCode="43";;
+        "BgBlue")           BGCode="44";;
+        "BgPurple")         BGCode="45";;
+        "BgCyan")           BGCode="46";;
+        "BgGray")           BGCode="47";;
+        *)                  BGCode="40";;
+    esac
+
+    local EndColorString="\033[0m"
+    local ColorFormatString="\033[${StyleCode};${FGCode};${BGCode}m"
+    LogWrite debug "StyleCode == ${StyleCode} , FGCode == ${FGCode} , BGCode == ${BGCode} , ColorFormatString == ${ColorFormatString}"
+    printf "${ColorFormatString}${4}${EndColorString}"
 }
 
 
