@@ -1,6 +1,6 @@
 # rhinolib bash library
 
-Copyright (C) 2021-2022 Kenneth Aaron.
+Copyright (C) 2021+ Kenneth Aaron.
 
 flyingrhino AT orcon DOT net DOT nz
 

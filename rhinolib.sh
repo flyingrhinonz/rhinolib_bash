@@ -2,7 +2,7 @@
 # Description:  bash script function library
 # Version:      1.6.26
 # Date:         2024-03-19
-# Copyright:    Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
+# Copyright:    2021+ Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # License:      GPLv3
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
 

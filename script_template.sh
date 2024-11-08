@@ -4,9 +4,9 @@
 # Description:  Script template for use with rhinolib
 # Version:      1.0.22
 # Date:         2023-09-23
-# By:           Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
-# Github:       https://github.com/flyingrhinonz/rhinolib_bash
+# Copyright:    2021+ Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # License:      GPLv3
+# Github:       https://github.com/flyingrhinonz/rhinolib_bash
 
 # This script originates from the master script file that comes with rhinolib.
 # Edit and reuse this script to take advantage of rhinolib functions.
