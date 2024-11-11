@@ -1,12 +1,15 @@
 #!/bin/bash
 
-# Name:         script_template.sh
-# Description:  Script template for use with rhinolib
-# Version:      1.0.22
-# Date:         2023-09-23
-# Copyright:    2021+ Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
-# License:      GPLv3
-# Github:       https://github.com/flyingrhinonz/rhinolib_bash
+declare -r ScriptName="ScriptName"
+    # ^ Script name for logging purposes
+declare -r ScriptDescription="Script template for use with rhinolib"
+declare -r ScriptVersion="1.1.0"
+declare -r ScriptDate="2024-11-11"
+declare -r ScriptCopyright="2024+"
+declare -r ScriptAuthor="Kenneth Aaron"
+declare -r ScriptAuthorEmail="flyingrhino AT orcon DOT net DOT nz"
+declare -r ScriptLicense="GPLv3"
+declare -r ScriptRepo="https://github.com/flyingrhinonz/rhinolib_bash"
 
 # This script originates from the master script file that comes with rhinolib.
 # Edit and reuse this script to take advantage of rhinolib functions.
@@ -21,15 +24,10 @@ set -o errexit      # Exit when a command fails
 set -o pipefail     # Capture and crash when pipes failed anywhere in the pipe
 
 
-declare -r ScriptVersion="SCRIPT DESCRIPTION v1.0.0 , 2022-03-03 , by YOUR NAME ( YOUR EMAIL )"
-
 declare -r ProcID="$(echo $$)"
     # ^ Script process ID for logging purposes
     #   Note - in systemd / journalctl the PID of logger is displayed and not this!
     #   Therefore I log it separately in rhinolib.
-
-declare -r ScriptName="ScriptName"
-    # ^ Script name for logging purposes
 
 declare -r CurrentUser="$( /usr/bin/id -un )"
 
@@ -70,7 +68,10 @@ trap 'ExitScript' EXIT
 
 
 SymLinkResolved="(Symlink resolved: $( /bin/readlink --quiet --no-newline $0 )) " || SymLinkResolved=""
-LogWrite info "${ScriptVersion}"
+LogWrite info "${ScriptDescription} . v${ScriptVersion} , ${ScriptDate} , by ${ScriptAuthor} ( ${ScriptAuthorEmail} )"
+    # ^ Results in a line like:
+    #       2024-11-11T09:24:51+1300 andromeda ProgramName[169940]: <INFO> (PID: 169935 , MN: ScriptName , FN: main , LI: 71):    Script template for use with rhinolib  v1.0.0 , 2024-11-11 , by Kenneth Aaron ( flyingrhino AT orcon DOT net DOT nz )
+    #                                          ^ ${SyslogProgName}                            ^ ${ScriptName}
 LogWrite info "Invoked commandline: $0 $* ${SymLinkResolved}, from directory: ${PWD:-unknown} , by user: $UID: ${CurrentUser:-unknown} , ProcID: ${ProcID} , PPID: ${PPID:-unknown} , Script max log level: ${ScriptMaxLogLevel}"
 LogWrite info "Fields explained: PID == Script PID , MN == Module (script) Name , FN == Function Name , LI == LIne number"
     # ^ The reason we have a PID in here is because journalctl logs the PID of the 'logger' command
