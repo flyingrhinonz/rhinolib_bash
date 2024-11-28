@@ -1,10 +1,11 @@
 #!/bin/bash
 
 declare -r ScriptName="ScriptName"
-    # ^ Script name for logging purposes
+    # ^ Appears in the extended log info. "${SyslogProgName}"  is the syslog program name
+    #       that can be filtered upon (eg with kenmode:  `jcff -t ProgramName`)
 declare -r ScriptDescription="Script template for use with rhinolib"
-declare -r ScriptVersion="1.1.0"
-declare -r ScriptDate="2024-11-11"
+declare -r ScriptVersion="1.1.1"
+declare -r ScriptDate="2024-11-29"
 declare -r ScriptCopyright="2024+"
 declare -r ScriptAuthor="Kenneth Aaron"
 declare -r ScriptAuthorEmail="flyingrhino AT orcon DOT net DOT nz"
@@ -55,7 +56,7 @@ declare -r OriginalIFS="${IFS}"
 
 if ! . /usr/local/lib/rhinolib.sh; then
     echo "CRITICAL - Cannot source:  /usr/local/lib/rhinolib.sh  . Aborting!"
-    logger -t "${SyslogProgName}" "CRITICAL - Cannot source:  /usr/local/lib/rhinolib.sh  . Aborting!"
+    logger -a "${SyslogProgName}" "CRITICAL - Cannot source:  /usr/local/lib/rhinolib.sh  . Aborting!"
     exit 150
 fi
 
@@ -97,7 +98,9 @@ LogWrite warning "Normally a warning about various conditions. Script continues 
 # Information condition logs:
 LogWrite -t info "Info level log + output to screen"
     # ^ This line uses:  -t  to tell LogWrite to write log + print to screen.
-    #   You can use:  -t  on any log level.
+    #   You can use:  -t  on any log level and text is output to screen respecting the
+    #       log level - if the log level is higher than the line level - no text is output.
+    #   Use the:  -a  arg (instead of:  -t) to ALWAYS print to screen - ignoring the log level.
 LogWrite debug "Information for advanced engineers/developers to interpret"
     # ^ A very long line from shakespere used for testing log line splitting
 
@@ -110,9 +113,10 @@ LogWrite debug "Information for advanced engineers/developers to interpret"
 # Note - the ERRORTEXT is given in this case!
 
 
-ExitScript -t info 0 "Script completed successfully"
+ExitScript -a info 0 "Script completed successfully"
     # ^ Successful exits are info/debug and code 0
-    #       The optional:  -t  echoes the line to stdout too.
+    #       The optional:  -t or:  -a  ALWAYS echoes the line to stdout too.
+    #       Only in the case of:  ExitScript  the line is always echoed - ignoring the log level.
 
 ExitScript error 150 "Script exited with an error"
     # ^ Failed exits are critical/error/warning and code != 0

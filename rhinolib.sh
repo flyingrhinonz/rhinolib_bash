@@ -1,7 +1,7 @@
 # Name:         rhinolib
 # Description:  bash script function library
-# Version:      1.6.26
-# Date:         2024-03-19
+# Version:      1.6.28
+# Date:         2024-11-29
 # Copyright:    2021+ Kenneth Aaron , flyingrhino AT orcon DOT net DOT nz
 # License:      GPLv3
 # Github:       https://github.com/flyingrhinonz/rhinolib_bash
@@ -85,9 +85,11 @@ fi
 
 
 function LogWrite {
-    #   Usage: LogWrite [-t] <LOG_LEVEL> <LOG_TEXT>
+    #   Usage: LogWrite [-t|-a] <LOG_LEVEL> <LOG_TEXT>
     #   LOG_LEVEL must be one of: none, critical, error, warning, info, debug
     #       and is case insensitive.
+    #       Only lines equal to, or more severe than:  LOG_LEVEL  will be logged
+    #       and optionally tee'd to stdout (-t arg).
     #
     #   Send whatever LOG_TEXT string you want - with or without newlines,
     #       and as long as you want. LogWrite will split the string into shorter log lines
@@ -95,9 +97,17 @@ function LogWrite {
     #       chars for the new lines.
     #
     #   If you supply the optional:  -t  arg, LogWrite will also send the log line
-    #       to stdout (echo) which mimics the linux tee feature.
+    #       to stdout (echo) which mimics the linux tee feature - this is also
+    #       subject to the value of:  LOG_LEVEL and will not echo for lower levels.
     #       Note - the echoed line will be printed as supplied without any of the
     #       fancy LogWrite string manipulation.
+    #   The args:  -t  and:  -a  are mutually exclusive - you can only use one of them.
+    #   Furthermore - the script is currently hardcoded to expect ONLY ONE optional arg
+    #       as $1 (-t or -a). After clearing this ONE ARG, it then expects the next arg
+    #       to be the LOG_LEVEL.
+    #
+    #   The optional:  -a  arg is similar to the:  -t  arg, but ALWAYS prints the
+    #       log line to stdout REGARDLESS the value of:  LOG_LEVEL.
     #
     #   Logging using "LogWrite" mimics the syslog format I use in my open source
     #       python code.
@@ -107,22 +117,31 @@ function LogWrite {
     #       LogWrite -t info "This line is logged and also printed to the screen"
 
     local TeeFlag="false"
-        # ^ If flag is set then echo the message too.
+    local AlwaysTeeFlag="false"
+        # ^ Mutually exclusive:  If either flag is set then echo the message too.
+        #   Note - this feature also appears in function:  ExitScript  - make sure you
+        #       modify that function too if you make changes to this feature.
 
     # Special flags can be supplied to LogWrite. Check if any are present:
     if (( $# > 0 )); then
         case "${1}" in
             "-t")   TeeFlag="true"
                         # ^ Set the:  TeeFlag  so that we can print the line to screen too
+                        #   Respects the value of:  LOG_LEVEL.
                     shift;;
                         # ^ We need this because the rest of LogWrite function assumes that
                         #       it is called with $1 (log level) and $2 (log message).
+            "-a")   AlwaysTeeFlag="true"
+                        # ^ Set the:  AlwaysTeeFlag  so that we ALWAYS print the line to screen too
+                        #   Ignores the value of:  LOG_LEVEL and always prints to stdout.
+                    shift;;
             *)      :;;
         esac
     fi
 
     local CallingLineLogLevel=${1:-ERROR}
-        # ^ Holds the log level (ERROR, INFO, etc) of the calling log line.
+        # ^ This is $1 since the SINGLE optional flag was cleared above and the arg shifted.
+        #   Holds the log level (ERROR, INFO, etc) of the calling log line.
         #   Note - if you called LogWrite with no args then the log level which
         #       was supposed to be sent in:  $1 will be forced to:  ERROR .
         #       Also, $2 will be missing and it too will be preset by rhinolib
@@ -147,6 +166,18 @@ function LogWrite {
         # ^ This array will hold the final version of line splitting after we do
         #       some processing in rhinolib.
     local LoggerText
+
+    shift       # Message was sent in what is now $1
+    LogText="${1:-"Check if you supplied Log Level and Error message args to the calling LogWrite"}"
+        # ^ Looks like there's no  $2  argument  in your  LogWrite  line, so we'll
+        #       force some log text for you, hopefully you'll pick this up in your logging output.
+
+    if [[ "${AlwaysTeeFlag}" == "true" ]]; then
+        echo -e "${LogText}"
+            # ^ The:  -e  allows controls in the string such as  \n  to be respected.
+    fi
+        # ^ AlwaysTeeFlag was set - print the log line to screen ALWAYS.
+        #   No fancy text processing is done on this line - it is printed exactly as supplied.
 
     # This block will stop processing if the script's ScriptMaxLogLevel is lower than the
     # log level of the log line. Kind of dirty way of doing it but bash doesn't supply
@@ -189,11 +220,6 @@ function LogWrite {
         #       any invalid text supplied in this variable.
         #   If you wish to enforce correct values in this variable - uncomment
         #       this test and uncomment the test earlier in this script.
-
-    shift       # Message was sent in $2
-    LogText="${1:-"Check if you supplied Log Level and Error message args to the calling LogWrite"}"
-        # ^ Looks like there's no  $2  argument  in your  LogWrite  line, so we'll
-        #       force some log text for you, hopefully you'll pick this up in your logging output.
 
     if [[ "${TeeFlag}" == "true" ]]; then
         echo -e "${LogText}"
@@ -327,15 +353,17 @@ function LogWrite {
 function ExitScript {
     #   Exit script properly and write log file.
     #
-    #   Format: ExitScript [-t] <ERRORLEVEL> <EXITCODE> <REASON>
+    #   Format: ExitScript [-t|-a] <ERRORLEVEL> <EXITCODE> <REASON>
     #       ERRORLEVEL  - one of: critical, error, warning, info, debug
     #       EXITCODE    - 0 for success, 1-255 for failure
     #       REASON      - plaintext that will be logged at exit time
     #
-    #   If you supply the optional:  -t  arg, ExitScript will also send the log line
+    #   If you supply the optional:  -t  or:  -a  arg, ExitScript will also send the log line
     #       to stdout (echo) which mimics the linux tee feature.
     #       Note - the echoed line will be printed as supplied without any of the
     #       fancy LogWrite string manipulation.
+    #   At the moment:  -t  and:  -a  both ALWAYS output the line to stdout irrespective
+    #       the value of LogLevel.
     #
     #   Examples:
     #       ExitScript error 150 "error occurred"           # Log an error and exit
@@ -344,7 +372,8 @@ function ExitScript {
     LogWrite debug "Function ExitScript started"
 
     local TeeFlag="false"
-        # ^ If flag is set then echo the message too.
+    local AlwaysTeeFlag="false"
+        # ^ Mutually exclusive:  If either flag is set then echo the message too.
 
     # Special flags can be supplied to ExitScript. Check if any are present:
     if (( $# > 0 )); then
@@ -354,6 +383,9 @@ function ExitScript {
                     shift;;
                         # ^ We need this because the rest of ExitScript function assumes that
                         #       it is called with $1, $2, $3 args.
+            "-a")   AlwaysTeeFlag="true"
+                        # ^ At the moment does the same as:  TeeFlag
+                    shift;;
             *)      :;;
         esac
     fi
@@ -364,9 +396,9 @@ function ExitScript {
     shift || :
     local ExitReason="${*:-"Error (a more specific exit reason was not supplied)"}"
 
-    if [[ "${TeeFlag}" == "true" ]]; then
+    if [[ "${TeeFlag}" == "true" || "${AlwaysTeeFlag}" == "true" ]]; then
         echo -e "${ExitReason}"
-        # ^ TeeFlag was set - print the log line to screen too.
+        # ^ TeeFlag or AlwaysTeeFlag was set - print the log line to screen too.
         #   The:  -e  allows controls in the string such as  \n  to be respected.
     fi
 
